@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN" xml:lang="zh-CN">
+	<head>
+		<title>Uploader</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<style type="text/css" media="screen">
+		html, body { height:100%; background-color: #ffffff;}
+		body { margin:0; padding:0; overflow:hidden; }
+		#flashContent { width:100%; height:100%; }
+		</style>
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+		<script type="text/javascript">
+		var jsReady = false;
+		function isReady() {
+			return jsReady;
+		}
+		function pageInit() {
+			jsReady = true;
+		}
+		function thisMovie(movieName) {
+			if (navigator.appName.indexOf("Microsoft") != -1) {
+				return window[movieName];
+			} else {
+				return document[movieName];
+			}
+		}
+		function sendToActionScript() {
+			thisMovie("Uploader").asselect();
+		}	
+		</script>
+	</head>
+	<body onload="pageInit();">
+		<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" id="Uploader" width="100" height="100" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab">
+			<param name="movie" value="Uploader.swf" />
+			<param name="quality" value="high" />
+			<param name="bgcolor" value="#869ca7" />
+			<param name="allowScriptAccess" value="sameDomain" />
+			<embed src="Uploader.swf" quality="high" bgcolor="#869ca7" 
+				width="100" height="100" name="Uploader" align="middle" 
+				play="true" loop="false" quality="high" allowScriptAccess="sameDomain" 
+				type="application/x-shockwave-flash" 
+				pluginspage="http://www.macromedia.com/go/getflashplayer">
+			</embed>
+		 </object>
+		<button id="jscallas">jscallas</button>
+		<script type="text/javascript">
+			$('#jscallas').click(function() {
+				sendToActionScript();
+			});
+		</script>
+	</body>
+</html>
