@@ -1,113 +1,239 @@
-/** ÉÏ´«×é¼ş 
- Ê¹ÓÃ·½·¨: 
+/** 
+ * ä¸Šä¼ ç»„ä»¶ 
+ *
+ * ä½¿ç”¨æ–¹æ³•: 
  * $('xxx').uploader(options)
- ÊÂ¼ş:
- * uploadselect
+ *
+ * äº‹ä»¶:
+ * uploadselect, uploadprogress, uploadsuccess, uploaderror, uploadcancel, uploadcomplete, uploadcompletedata uploadmessage
+ *
+ * ä¾èµ–ç»„ä»¶: countdown
  */
 (function($) {
 	$.widget('hijax.uploader', $.hijax.widget, {
 		options: {
-			// Ô¶³Ì·şÎñÆ÷µØÖ·
-			url: '', 
-			// ¹©·şÎñÆ÷Ê¹ÓÃµÄ×Ö¶ÎÃû
-			field: 'files', 
-			// Ö§³ÖÎÄ¼şÀàĞÍ
-			exts: '', 
-			// Ö§³ÖÎÄ¼ş´óĞ¡, µ¥Î»: Mb
-			size: 0, 
-			// ×Ô¶¯ÉÏ´«
-			manully: false, 
-			// ²¢·¢ÉÏ´«
-			multiple: false, 
-			// ¿ÉÈ¡ÏûÉÏ´«
-			cancelable: true, 
-			// ¿ÉÖØĞÂÉÏ´«
-			reuploadable: true, 
-			$filelist: null, 
-			// µ¥¸öÎÄ¼şDOM	
-			fileTemplate: '<li id="">' 
-				+ '<div class="{uploaderFileInfo}"><span class="{uploaderFileName}"></span><span class="{uploaderFileSize}"></span></div>' 
-				+ '<div class="{uploaderProgressBar}"><div class="{uploaderProgressBarThumb}"></div></div>' 
-				+ '<div class="{uploaderFileHandler}"></div>' 
-				+ '<div class="{uploaderFileStatus}"></div>'
-				+ '</li>', 
-			message: {
-				typeError: "{file} ²»Ö§³ÖµÄÀàĞÍ. ½öÖ§³Ö {extensions}",
-				sizeError: "{file} ´óĞ¡²»Ó¦´óÓÚ {sizeLimit}",
-				minSizeError: "{file} ´óĞ¡²»Ó¦Ğ¡ÓÚ {minSizeLimit}",
-				emptyError: "{file} ´óĞ¡Îª0",
-				onLeave: "µ±Ç°ÓĞÕıÔÚÉÏ´«µÄÎÄ¼ş, ÄúÈ·ĞÅÒªÀë¿ª"		
-			}				
-		},  
-		widgetEventPrefix: 'upload', 	
-		_attachEvent: function() {
-			this._on(this.$filelist, {
-				'click a[href], button[href]': function(e) {
-					var $target = $(e.target), 
-						scheme = 'javascript:', fn, 
-						href = $target.attr('href'), 
-						js = href.indexOf(scheme), 
-						context = options.context || this, 
-						id;
-						
-					if (~$.inArray(href, ['', '#'])) return _leave();
-					
-					id = $target.closest('tr').find('input[type=checkbox]:first').val() || 
-						(this.tbodys[this.page - 1] && this.tbodys[this.page - 1].find('input:checked:first').val());
-					
-					// if (id === undefined) return;
-					
-					if (~js) {
-						fn = href.slice(scheme.length);
-						~fn.lastIndexOf(';') && (fn = fn.slice(0, -1));
-						fn && context[fn] && context[fn](e, id);
-						e.preventDefault();
-					} else {
-						$target.attr('href', href + (~href.indexOf('?') ? '&' : '?') + dict.id + '=' + id + '&' + dict.page + '=' + self.page);
-						return _leave();
-					}
-					function _leave() {
-						var evt = $.Event(e);
-						evt.type = 'leave';
-						// µÚÈı·½¿ÉÔÚgridleaveÊÂ¼şÖĞÀ¹½ØÄ¬ÈÏĞĞÎª
-						self._trigger(evt, id);
-						return !evt.isDefaultPrevented();						
+			themes: {
+				'default': {
+					style: {
+						filelist: '', 
+						file: '', 
+						fileInfo: '', fileName: '', fileSize: '', fileStatus: '', 
+						fileOperation: '', cancelBtn: '', 
+						progressBar: '', progressBarThumb: '', progress: '', 
+						netWork: '', speed: '', remainTime: ''
 					}
 				}
-			});			
-			
-		}, 
+			}, 	
+			context: null, 
+			// è¿œç¨‹æœåŠ¡å™¨åœ°å€
+			url: '', 
+			// swfåœ°å€
+			swfUrl: '', 
+			// ä¾›æœåŠ¡å™¨ä½¿ç”¨çš„å­—æ®µå
+			field: 'files', 
+			// æ”¯æŒæ–‡ä»¶ç±»å‹: '*.jpg;*.gif;*.png'
+			type: '*.jpg;*.gif;*.png', 
+			// æ”¯æŒæ–‡ä»¶å¤§å°, æ”¯æŒå•ä½: G, M, K
+			size: '2M', 
+			// è‡ªåŠ¨ä¸Šä¼ 
+			manully: false, 
+			// æ–‡ä»¶æ•°
+			multiple: 5, 
+			// å¹¶å‘ä¸Šä¼ 
+			concurrent: true, 
+			// å¯å–æ¶ˆä¸Šä¼ 
+			cancelable: true, 
+			// æ˜¾ç¤ºç½‘ç»œä¿¡æ¯
+			showNetwork: true, 
+			// é¡µé¢ä¸Šå·²å­˜åœ¨çš„æ–‡ä»¶åˆ—è¡¨
+			$filelist: null,
+			// è‡ªå®šä¹‰æ¶ˆæ¯æ˜¾ç¤ºæ ·å¼, è¿”å›æ¶ˆæ¯å¯¹è±¡(jQuery or Other object)
+			showMsg: $.noop(), 
+			message: {
+				defaultError: 'ä¸Šä¼ å¤±è´¥', 
+				defaultOk: ' âœ”', 
+				typeError: 'ä¸æ”¯æŒçš„ç±»å‹ï¼Œä»…æ”¯æŒ {extensions}',
+				sizeError: 'å¤§å°ä¸åº”å¤§äº {sizeLimit}', 
+				multipleError: 'ä¸€æ¬¡æœ€å¤šåªèƒ½ä¸Šä¼ ä¸ªæ–‡ä»¶', 
+				onLeave: 'å½“å‰æœ‰æ­£åœ¨ä¸Šä¼ çš„æ–‡ä»¶ï¼Œæ‚¨ç¡®ä¿¡è¦ç¦»å¼€ï¼Ÿ'
+			}, 
+			modMap: {
+				'1': 'typeError',
+				'2': 'sizeError', 
+				'4': 'multipleError'
+			}, 
+			// è‹¥éå‘½åå†²çª, é€šå¸¸ä½¿ç”¨é»˜è®¤å€¼
+			jsapi: 'externalInterface', 
+		},  
+		widgetEventPrefix: 'upload', 
+		swfobject: null, 
+		_fileTpl: '', 
 		_paint: function(models) {
 			var 
+			self = this, 
             options = this.options, 
             style = options.themes[options.theme].style, 
-			clspfx = this.namespace + '-' + options.prefix,
-			clsflst = clspfx + '-filelist', 
-			html = '<div class="{uploader}">' 
-				+ '<a href="javascript:;" class="{uploaderButton}">ÉÏ´«</a>' 
-				+ '<ul class="{uploaderFilelist}"></ul></div>';
-			var $parent = this.element.parent();
-			if (!options.$filelist) {
-				this.$filelist = $('<ul class="' + clsflst + '"/>', {'position': 'absolute', 'display': 'none'}).after(this.element)
+			clspfx = this.namespace + '-' + options.prefix, 
+			clspbt = clspfx + '-progress-bar-thumb', 
+			clspgrs = clspfx + '-progress',
+			clsopt = clspfx + '-operation', 
+			clsccl = clspfx + '-cancel-btn', 
+			clsnet = clspfx + '-network',
+			clsspd = clspfx + '-speed', 
+			clsrt = clspfx + '-remain-time', 
+			host = window, 
+			id = this.widgetFullName + '-' + this.uuid;
+
+			// ç”Ÿæˆid: hijax-uploader-0
+			if (!~('relative, absolute, fixed'.indexOf(this.element.css('position')))) {
+				this.element.css({'position': 'relative'});
+			}			
+			this.element
+				// ä¸ç ´ååŸæœ‰id, name
+				.attr('uid', id)
+				.append($('<div/>', {'id': id}));
+			if (!$.contains(document, $(options.$filelist)[0])) {
+				this.$filelist = $('<ul class="' + style.filelist + '"/>').css({'position': 'absolute', 'display': 'none', 'top': '100%', 'left': 0}).appendTo(this.element);
 			}
-			// ´´½¨flash object
-			swfobject.embedSWF('', $parent.).css({
-				'position': 'absolute', 
-				'left':, 
-				'top':, 
-				'width':, 
-				'height':
+			// åˆ›å»ºswf object(dynamic publishing), åŒæ­¥æ“ä½œ
+			swfobject.embedSWF(
+				options.swfUrl, id, 
+				'100%', '100%', 
+				'9.0.0', null,
+				{'uuid': this.uuid, 'field': options.field, 'type': options.type, 'size': options.size, 'url': options.url, 'data': '', 'multiple': options.multiple, 'concurrent': options.concurrent, 'manully': options.manully, jsapi: options.jsapi}, 
+				{'allowScriptAccess': 'always'}, {'wmode': 'transparent'},
+				// {success: true, id: '', ref: HTMLObject}
+				function(arg) {
+					self.swfobject = arg.ref;
+					$(self.swfobject).css({
+						'position': 'absolute', 
+						'left': 0, 'top': 0
+					});
+				}
+			);
+			
+			// æ›éœ²æ¥å£
+			host[options.jsapi] = host[options.jsapi] || function(fn) {
+				var 
+				uuid = self.widgetFullName + '-' + arguments[1],
+				args = [].slice.call(arguments, 2), 
+				context = $[self.namespace][self.widgetName + 's'][uuid];
+				
+				context[fn].apply(context, args);
+			};
+			
+			this._fileTpl = '<li id="<%=id%>" class="' + style.filelist + '">' 
+				+ '<div class="' + style.fileInfo + '"><span class="' + style.fileName + '"><%=name%></span><span class="' + style.fileSize + '"><%=size%></span></div>' 
+				+ '<div class="' + style.progressBar + '"><div class="' + clspbt + ' ' + style.progressBarThumb + '"><span class="' + clspgrs + ' ' + style.progress + '"></span></div></div>' 
+				+ (options.showNetwork ? ('<div class="' + clsnet + ' ' + style.netWork + '"><span class="' + clsspd + ' ' + style.speed + '"></span><span class="' + clsrt + ' ' + style.remainTime + '"></span></div>') : '') 
+				+ (options.cancelable ? ('<div class="' + clsopt + ' ' + style.fileOperation + '"><a href="javascript:cancel;" class="' + clsccl + ' ' + style.cancelBtn + '">å–æ¶ˆ</a></div>') : '') 				
+				+ '</li>';
+		}, 
+		trace: function(val) {
+			console.log(val);
+		}, 
+		_getSelectedId: function($target) {
+			return $target.closest('li').attr('id');
+		}, 
+		
+		/** ASå›è°ƒJS
+		 */
+		// Output filelist
+		onSelect: function(files) {
+			var 
+			self = this, 
+			filelist = '', 
+			isDefaultPrevented = this._trigger({type: 'select'}, [files]), 
+			e = {};
+			if (!isDefaultPrevented) return;
+
+			$.each(files, function() {
+				filelist += $.tmpl(self._fileTpl, this);
+				if (this.error) {
+
+				}
 			});
 
-		}, 
-		// È¡ÏûÉÏ´«
-		cancel: function() {},
-		//  id: file.id, size: file.size, error: error
-		select: function(files) {
-			
+			this.$filelist.html(filelist).show();
 		},
-		// ÉÏ´«
-		upload: function() {},
-		leave: function() {}		
+		onOpen: function(file, files) {
+			var isDefaultPrevented = this._trigger({type: 'open'}, file);
+			if (!isDefaultPrevented) return;		
+		}, 
+		onProgress: function(file, files) {
+			// STATE_UNINITIALIZED:int = 0;STATE_UPLOADING:int = 1;STATE_COMPLETE:int = 2;
+			var 
+            options = this.options, 
+			clspfx = this.namespace + '-' + options.prefix, 
+			sltpbt = '.' + clspfx + '-progress-bar-thumb', 
+			sltpgrs = '.' + clspfx + '-progress',
+			sltnet = '.' + clspfx + '-network', 
+			sltrt = '.' + clspfx + '-remain-time', 
+			sltspd = '.' + clspfx + '-speed', 
+			$file = this.$filelist.find('#' + file.id), 
+			isDefaultPrevented = this._trigger({type: 'progress'}, file);
+			if (!isDefaultPrevented) return;
+
+			$file
+				.find(sltpbt).css({'width': file.progress})
+				.find(sltpgrs).html(file.progress);
+			$file.find(sltspd).html(file.speed);
+			$file.find(sltrt).countdown({date: file.remainTime, autoStart: false, leadingZero: true});
+			$file.find(sltnet).show();
+		},
+		onSuccess: function(file, files) {
+			var 
+            options = this.options, 
+			clspfx = this.namespace + '-' + options.prefix, 
+			sltnet = '.' + clspfx + '-network', 
+			sltopt = '.' + clspfx + '-operation', 
+			$file = this.$filelist.find('#' + file.id), 
+			isDefaultPrevented = this._trigger({type: 'success'}, file);
+			if (!isDefaultPrevented) return;			
+			
+			$file.find(sltnet).hide();		
+			$file.find(sltopt).hide();		
+		}, 
+		onError: function(file, files) {
+			var 
+            options = this.options, 
+			clspfx = this.namespace + '-' + options.prefix, 
+			sltccl = '.' + clspfx + '-cancel-btn', 
+			$file = this.$filelist.find('#' + file.id), 
+			isDefaultPrevented = this._trigger({type: 'error'}, file);
+			if (!isDefaultPrevented) return;			
+
+			$file.find(sltccl).attr('href', 'javascript:reupload;').html('é‡æ–°ä¸Šä¼ ');
+		}, 
+		onComplete: function(file, files) {
+			var isDefaultPrevented = this._trigger({type: 'complete'}, file);
+			if (!isDefaultPrevented) return;
+		}, 
+		onCompleteData: function(file, files) {
+			var isDefaultPrevented = this._trigger({type: 'completedata'}, file);
+			if (!isDefaultPrevented) return;		
+		}, 
+		onCancel: function(file, files) {
+			var isDefaultPrevented = this._trigger({type: 'cancel'}, file);
+			if (!isDefaultPrevented) return;		
+		}, 
+
+		/** JSè°ƒç”¨AS
+		 */
+		// ä¸Šä¼ 
+		upload: function() {
+			this.swfobject.upload();
+		}, 
+		// é‡æ–°ä¸Šä¼ 
+		reupload: function(e, id) {
+			$(e.target).attr('href', 'javascript:cancel;').html('å–æ¶ˆ');
+			this.swfobject.upload({id: id});
+		},
+		// å–æ¶ˆå•ä¸ªæ–‡ä»¶ä¸Šä¼ 
+		cancel: function(e, id) {
+			// ç”±äºæ€§èƒ½é—®é¢˜, åº”é€‰æ‹©æ€§åœ°ä¼ é€’eçš„æŸäº›å±æ€§
+			$(e.target).attr('href', 'javascript:reupload;').html('é‡æ–°ä¸Šä¼ ');
+			this.swfobject.cancel({id: id});
+		}	
 	});
 })(jQuery);

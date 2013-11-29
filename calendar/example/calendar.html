@@ -1,0 +1,39 @@
+﻿<!doctype html>
+<html>
+	<head>
+		<title>Calendar</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<style type="text/css">
+		* {margin:0; padding:0;}
+		.calendar-active {background-color:yellow;}
+		table {float:left;margin-left:10px;}
+		</style>
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+		<script type="text/javascript" src="http://jslib.com/jquery/jquery.ui.widget.js"></script>
+		<script type="text/javascript" src="http://hijaxui.com/hijax.widget.js"></script>
+		<script type="text/javascript" src="http://hijaxui.com/calendar/calendar.js"></script>
+		<script type="text/javascript" src="http://hijaxui.com/calendar/locales/zh_CN.js"></script>
+		<script type="text/javascript" src="http://hijaxui.com/calendar/locales/en.js"></script>
+
+	</head>
+	<body>
+		<div class="calendar"></div>
+		<script type="text/javascript">
+
+			$('.calendar').calendar({
+				themes: {
+					'default': {
+						style: {
+							active: 'calendar-active'
+						}
+					}
+				},
+				//weekStart: 1,
+				date: [new Date(), new Date(2013, 11, 1)], 
+				todayHighlight: true, 
+				startView: 'decade'
+			});
+			
+		</script>
+	</body>
+</html>

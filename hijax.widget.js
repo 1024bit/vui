@@ -1,19 +1,35 @@
 /**
  * hijax所有widget继承此基类, 可根据需求扩展
- *     
+ *
+ * UI按照优化目的可分为两类: 
+ * 1. 前端JS生成(前后端分离, 使用方便)
+ * 2. 后端HTML输出 (搜索引擎友好, 比如menu组件)
+ * 讨论问题: 一个优秀的组件是否应该支持以上两点?
+ *
  * 添加主题: (以menu为例)
  * $.hijax.widgetSetup('menu', {themes: {pretty: {}}});
  * 应用主题:
  * $('xxx').menu({theme: 'pretty'})
  */
-(function ($) {
+(function ($) { 
     $.widget('hijax.widget', {
         options: {
+			// 运用场景? 若仅为满足非插件调用方式, 似乎没有必要
             element: null, 
             models: [], 
-            themes: {'default': {}},             
+            themes: {
+				'default': {
+					// 通常, 两者二选一即可
+					// 适用于DOM结构固定的场景
+					'style': {}, 
+					// 适用于DOM结构变化且子节点不绑定事件的场景(几乎不可能)
+					'template': {}
+				}
+			},             
             theme: 'default', 
-            messages: {
+			// 作为a[href], button[href]中函数的上下文
+			context: null, 
+            message: {
                 createError: 'Create widget error.'
             }
         }, 
@@ -69,10 +85,51 @@
             this._attachEvent();
         }, 
         // 事件绑定
-        _attachEvent: function() {}, 
+        _attachEvent: function() {
+			var 
+			self = this, 
+            options = this.options;
+
+			this._on({
+				'click a[href], button[href]': function(e) {
+					var $target = $(e.target), 
+						scheme = 'javascript:', fn, 
+						href = $target.attr('href'), 
+						js = href.indexOf(scheme), 
+						context = options.context || this, 
+						id;
+						
+					if (~$.inArray(href, ['', '#'])) return _leave();
+					
+					id = this._getSelectedId($target);
+					
+					// if (id === undefined) return;
+
+					if (~js) {
+						fn = href.slice(scheme.length);
+						~fn.lastIndexOf(';') && (fn = fn.slice(0, -1));
+						fn && context[fn] && context[fn](e, id);
+						e.preventDefault();
+					} else {
+						return _leave();
+					}
+					
+					function _leave() {
+						var evt = $.Event(e);
+						evt.type = 'leave';
+						evt.target = e.target;
+						// 第三方可在leave事件中拦截默认行为
+						self._trigger(evt, id);
+						return !evt.isDefaultPrevented();					
+					}
+				}
+			});			
+		}, 
         _getCreateOptions: function () {
             return this.element.metadata(this.widgetName);
         },
+		// 被选中的子项id, 比如grid组件被选中的项id
+		_getSelectedId: function($target) {}, 
         // 初始化子组件
         // 标签驱动
         // 考虑这种情况: <div widget="module tabpanel ..."/>
@@ -121,17 +178,18 @@
             widgetName = $parent.attr('widget');
             widgetName && (this.parent = $parent.data(self.namespace + '-' + widgetName));
             this.id = $elem.attr('uid') || $elem.attr('id') || $elem.attr('name') || this.eventNamespace.slice(1);
-            if (!this.parent) {
-                ns = this.widgetName + 's';
-                // 关联数组
-                !$.hijax[ns] && ($.hijax[ns] = {});
-                this.id && ($.hijax[ns][this.id] = this);
-            } else {
+
+			ns = this.widgetName + 's';
+			// 关联数组
+			!$.hijax[ns] && ($.hijax[ns] = {});
+			this.id && ($.hijax[ns][this.id] = this);
+            
+			if (this.parent) {
                 // 定位widget: 父widget下的索引或全局唯一id
                 this.id && (this.parent.widgets[this.id] = this);
             }
         }, 
-        // 更换主题
+        // 更换主题(Theme contains structure and style.)
         changeTheme: function(name) {
             var 
             self = this, options = this.options, 
@@ -140,7 +198,7 @@
             
             // 相同主题
             if (options.theme === name) {
-                this.raise(options.messages.sameTheme, 'notice');
+                this.raise(options.message.sameTheme, 'notice');
                 return;
             }
             to = options.themes[name];
@@ -155,7 +213,7 @@
         // 更新组件
         update: function(models) {
             if (!models) {
-                this.raise(options.messages.noUpdate, 'notice');
+                this.raise(options.message.noUpdate, 'notice');
                 return;
             }
             this.options.models = models;
@@ -188,7 +246,7 @@
 			
 			orig = event.originalEvent;
 			
-            event.type = (type == this.widgetEventPrefix ? type : (!addPrefix ? type : this.widgetEventPrefix + type)).toLowerCase();
+            event.type = (!type.indexOf(this.widgetEventPrefix) ? type : (!addPrefix ? type : this.widgetEventPrefix + type)).toLowerCase();
             
 			if (orig) {
 				orig.namespace = "";
@@ -278,7 +336,7 @@
         destroy应接受一个参数, 用来标明是否由$.fn.remove方法触发, 避免重复执行
         */
 		destroy: function (keepData) {
-            var parent = this.parent, store;
+            var parent = this.parent;
             $.Widget.prototype.destroy.apply(this);
             // 触发组件remove事件
             // 注意区别: moduleremove vs. remove.module(内置) (前者对应组件本身, 后者对应组件的dom对象)
@@ -292,18 +350,26 @@
 				this.destroy();
 			});
             
-			store = parent ? parent.widgets : $.hijax[this.widgetName + 's'];
             // 正常情况下, 线网每次发布都具有不同的版本号
-            delete store[this.id];
+            delete $.hijax[this.widgetName + 's'][this.id];
+			parent && (delete parent.widgets[this.id]);
 			
             echo('destroy');
         },        
         // 抛出消息
-        raise: function (msg, type) {
+        raise: function (message) {
+			var options = this.options, messages;
+			if ($.type(message.message) === 'number') {
+				$.each($.factorMod(message.messgae), function() {
+					messages.push({type: message.type, message: options.message[options.modMap[String(this)]]});
+				});
+			} else {
+				messages.push(message);
+			}
             // type: error, warning, notice
-            this._trigger('error', null, {type: type, msg: msg});
-            echo(msg);
-        }
+			// 支持多条消息
+            this._trigger({type: 'message'}, messages);
+        }	
     });  
 	
 	/** 插件扩展
@@ -491,4 +557,68 @@
 			$msk && $msk.hide();
 		}	
 	});
+	
+	/** $扩展
+	 */
+	$.extend({
+		// 微型模板函数
+		tmpl: function(tpl, data) {
+			var html = '';
+			if (!$.util || !$.util.tmpl) { 
+				var lpos, rpos, key,
+					lb = '<%=', rb = '%>', 
+					llth = lb.length, rlth = rb.length;
+				lpos = tpl.indexOf(lb);
+				if (lpos !== -1) {
+					rpos = tpl.indexOf(rb, lpos + llth);
+					key = tpl.slice(lpos + llth, rpos);
+					html += tpl.slice(0, lpos) + ((data[key] === undefined) ? '' : data[key]);
+					html += arguments.callee(tpl.slice(rpos + rlth), data);
+				} else {
+					html = tpl;
+				}
+				
+			} else {
+				html = $.util.tmpl(tpl, data);
+			}
+			return html;
+		}, 		
+		// 分解mod: 7 = 1 + 2 + 4
+		factorMod: function(mod) {
+			var factors = [], sum = 1;
+			function _factorMod(modx) {
+				if (sum > mod) return;
+				factors.push(modx);
+				modx *= 2;
+				sum += modx;
+				_factorMod(modx);
+			}
+			_factorMod(1);
+			return factors;
+		}, 
+        // 将字符串的首字母转换为大写
+        ucfirst: function (str) {
+            return str.replace(/^([a-z])/i, function (m) {
+                return m.toUpperCase();
+            });
+        }, 
+		// 字符, 对象, 数组是否为空
+		isEmpty: function(arg) {
+			var key;
+			if (arg.length) return false;
+			if ($.type(arg) === 'object') {
+				for (key in arg) return false;
+			}
+			return true;
+		}
+	});
+	
+	/** $.hijax扩展
+	 */	
+	$.extend($.hijax, {
+		// 批量修改组件配置
+		widgetSetup: function (widgetName, options) {
+			$.extend(true, $.hijax[widgetName].prototype.options, options);
+		} 
+	});			
 })(jQuery);
