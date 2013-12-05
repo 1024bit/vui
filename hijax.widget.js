@@ -358,10 +358,10 @@
         },        
         // 抛出消息
         raise: function (message) {
-			var options = this.options, messages;
+			var options = this.options, messages = [];
 			if ($.type(message.message) === 'number') {
 				$.each($.factorMod(message.messgae), function() {
-					messages.push({type: message.type, message: options.message[options.modMap[String(this)]]});
+					messages.push({type: message.type, message: options.message[options.mod[this + '']]});
 				});
 			} else {
 				messages.push(message);
@@ -502,6 +502,18 @@
 			});
 			return deferred.promise();
 		}, 
+		// 获取元素html
+		outerHtml: function () {
+			var outerHtml = '', $div;
+			if (this[0].outerHTML || false) {
+				return this[0].outerHTML;
+			}
+			$div = $('<div/>');
+			$div[0].appendChild(this.clone(true)[0]);
+			outerHtml = $div[0].innerHTML;
+			$div[0] = null;
+			return outerHtml;
+		},		
 		// 显示加载信息
 		// 单例
 		showLoadMsg: function (opts) {

@@ -4,6 +4,8 @@
  * Scene: 
  * 1. 验证组件不负责表单提交
  * 2. 灵活与性能是此消彼长的关系
+ 
+ * 讨论问题: 错误消息一次全部提示与逐一提示的优缺点
  *
  * 使用方法: 
  * 1. $('xxform').validator({
@@ -40,13 +42,7 @@
 			// 初始化时将引导性提示消息显示在表单元素后面
 			showTips: false, 
 			// 自定义消息显示样式, 返回消息对象(jQuery or Other object)
-			showMsg: $.noop,
-			// 表单验证成功回调函数			
-			success: $.noop, 
-			// 字段验证成功回调函数
-			ok: $.noop, 
-			// 字段验证失败回调函数
-			error: $.noop
+			showMsg: $.noop()
 		},  
 		widgetEventPrefix: 'validate',
 		// 增加规则
@@ -311,6 +307,7 @@
 			if (this.options.showTipsAsPlaceholer) {
 				$elements.each(function() {
 					$this = $(this);
+					// placeholder 属性适用于以下的 <input> 类型: text, search, url, telephone, email 以及 password
 					if (!$this.is(':checkbox, :radio')) {
 						$this.attr('placeholder', $this.metadata('rule').placeholder);
 					}

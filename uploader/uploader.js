@@ -57,7 +57,7 @@
 				multipleError: '一次最多只能上传个文件', 
 				onLeave: '当前有正在上传的文件，您确信要离开？'
 			}, 
-			modMap: {
+			mod: {
 				'1': 'typeError',
 				'2': 'sizeError', 
 				'4': 'multipleError'

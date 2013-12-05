@@ -16,7 +16,9 @@
 			// 数据源
 			models: {
 				footer: {
-					'today': {title: 'Today', href: 'javascript:today;'}
+					'today': {title: 'Today', href: 'javascript:today;'}, 
+					'next': {title: 'Next', href: 'javascript:next;'},
+					'prev': {title: 'Prev', href: 'javascript:prev;'}
 				}
 			}, 
 			dict: {
@@ -29,6 +31,10 @@
 						date: '',
 						// 焦点日期项
 						activeDate: '',
+						selectedDate: '',
+						edgeDate: '', 
+						rangeStart: '', 
+						rangeEnd: '', 
 						// 主体容器
 						body: '',
 						// 日期表格
@@ -36,14 +42,14 @@
 						// 底部容器
 						footer: '', 
 						// 操作按钮
-						btn: ''					
+						btn: '', 
 					}
 				}
 			}, 	
 			// 数组表示日期范围
-			date: new Date(), 
+			initialDate: new Date(), 
 			// 周的第一天(周日)
-			weekStart: 0, 	
+			weekStart: 0, 
 			// 开始时间
 			startDate: '',
 			// 结束时间
@@ -52,7 +58,7 @@
 			format: 'yyyy-mm-dd', 
 			// 视图日期的格式: 使用sprintf对日期项进行格式化, 默认为空, 可提升性能
 			viewFormat: {
-				decade: '', year: 'M', month: '', day: '', hour: ''
+				decade: '', year: 'M', month: '', day: 'h:00', hour: 'h:ii'
 			}, 
 			// 视图表头日期的格式
 			viewCaptionFormat: {
@@ -61,43 +67,87 @@
 			placement: 'right', 
 			startView: 'month', 
 			minView: 'month',
-			maxView: 'month', 
+			maxView: 'decade', 
 			// en, zh-CN
 			language: 'en', 
 			daysOfWeekDisabled: [], 
 			// 相邻分钟差值
 			minuteStep: 5, 
 			// 相邻视图差值
-			viewStep: ['+1h', '+1d', '+1m', '+1y', '+10y'], 
+			viewStep: ['1h', '1d', '1m', '1y', '10y'], 
 			todayHighlight: true, 
 
 			showMeridian: false, 
+			// 同时显示两个并列的视图
+			showDouble: false, 
 			autoclose: true, 
 			autoselect: true, 
-			// 只显示半个月
-			halfMonth: false, 
 			
 			message: {
+				argError: ''
 			}
 		},  
 		views: ['hour', 'day', 'month', 'year', 'decade'], 
+		// 不加入配置项: IE8及以下版本, Data.parse解析格式必须满足: yyyy/m/d (分隔符为斜线) 
+		_format: {
+			hour: 'yyyy/m/d h:ii', day: 'yyyy/m/d h:00', month: 'yyyy/m/d', year: 'yyyy/m/1', decade: 'yyyy/1/1'
+		}, 
+		// 日期范围
+		range: [], 
+		_create: function() {
+			var 
+			options = this.options, 
+			i = $.inArray(options.startView, this.views), min = $.inArray(options.minView, this.views), max = $.inArray(options.maxView, this.views);
+
+			if (i > max || i < min) {
+				return this.raise({
+					type: 'error', 
+					message: options.message.argError
+				});
+			}
+			
+			options.initialDate = [].concat(options.initialDate);
+			options.initialDate.length = Math.min(options.initialDate.length, 2);
+			options.initialDate.sort(function(a, b) {
+				return a - b;
+			});
+			// 拷贝数组
+			this.range = [].concat(options.initialDate);
 		
+			this._super();
+		}, 
 		_attachEvent: function() {
 			var 
 			self = this, 
             options = this.options, 
 			clspfx = this.namespace + '-' + options.prefix, 
 			evtmap = {
-				'click td': function(e) {
-					this.$body.html(this.createView(self.parse($(e.currentTarget).attr('date')), this.activeView - 1));
-				}, 
-				'click caption': function() {}				
+				'click caption': function(e) {
+					if (this.activeView + 1 > $.inArray(options.maxView, this.views)) return;
+					this.createView(self.parse($(e.currentTarget).parent().attr('date')), this.activeView + 1);					
+				}				
 			};
 
 			this._on(evtmap);
+			this._on(true, {
+				'click td': function(e) {
+					var options = this.options, date = self.parse($(e.currentTarget).attr('date'));
+					this.selectRange(this.range[1], date);
+					if (this.activeView - 1 < $.inArray(options.minView, this.views)) {
+						
+						if (options.autoclose && options.autoselect) {
+							this.close();
+						}
+						return;
+					}
+										
+					this.$body.html(this.createView(date, this.activeView - 1));
+					
+				}			
+			});
 			
 			this._super();
-		},  
+		}, 		
 		_paint: function(models) {
 			var 
 			self = this, 
@@ -107,14 +157,8 @@
 			clsbody = clspfx + '-body', 
 			dict = options.dict, 
 			footer = models[dict.footer], 
-			html;
-			
-			options.date = [].concat(options.date);
-			options.date.length = Math.min(options.date.length, 2);
-			html = '<div class="' + style.body + ' ' + clsbody + '">' 
-				+ self.createView(self.parse(options.date[0]), options.startView);
-				+ '</div>';
-				
+			html = '<div class="' + style.body + ' ' + clsbody + '"></div>';
+
 			if (!$.isEmpty(footer)) {
 				html += '<div class="' + style.footer + '">';
 				$.each(footer, function(key) {
@@ -122,8 +166,11 @@
 				});
 				html += '</div>';
 			}
+
 			this.element.html(html);
-			this.$body = this.element.find('.' + clsbody);
+			this.$body = this.element.find('.' + clsbody).html(this.createView(options.initialDate[0], options.startView));
+			this.selectRange();
+
 		}, 
 		// 定位到今天
 		today: function() {
@@ -133,9 +180,8 @@
 		// 关闭控件
 		close: function() {}, 
 		// view: hour(0) day(1) month(2) year(3) decade(4)
-		createView: function(date, view, activeHighlight) {
-			console.log(date)
-			if (activeHighlight !== false) activeHighlight = true;
+		createView: function(date, view, showDouble) {
+			if (showDouble !== false) showDouble = true;
 			view = ($.type(view) === 'number') ? this.views[view] : view.toLowerCase();
 			this.activeView = $.inArray(view, this.views);
 			if (!~this.activeView) return;		
@@ -145,7 +191,6 @@
 			options = this.options, 
 			style = options.themes[options.theme].style, 
 			clspfx = this.namespace + '-' + options.prefix, 
-			clsactive = clspfx + '-active', 			
 			lang = this.constructor.lang[options.language], 
 			year = date.getFullYear(), 
 			month = date.getMonth(), // (0~11)
@@ -154,13 +199,13 @@
 			wday = date.getDay(), // (0~6)
 			hour = date.getHours(), // (0~23)
 			minute = date.getMinutes(), // (0~59)
-			activedate, 
 			ismonth = (view === 'month'), 
 			isdecade = (view === 'decade'), 
 			cols = ismonth ? 7 : 4, 
 			i, item, items, 
-			html, frag = '', 
-			// IE8及以下版本, Data.parse解析格式必须满足: yyyy/m/d (分隔符为斜线)
+			$html, html, frag = '', 
+			_format = this._format[view], 
+			
 			_show = {
 				// 十年视图
 				decade: function () {
@@ -173,11 +218,7 @@
 					i = 0;
 					while (i < 12) {
 						item = {text: year0 + (i++)};
-						item.date = item.text;
-						if (activeHighlight && (item.text === year)) {
-							item.active = 1;
-							item.date = activedate;
-						}
+						item.date = new Date(item.text, 0);
 						years.push(item);
 					}
 					return years;
@@ -187,12 +228,8 @@
 					var months = [];
 					i = 0;
 					while (i < 12) {
-						item = {text: ++i};
-						item.date = year + '-' + item.text;
-						if (activeHighlight && (i === (month + 1))) {
-							item.active = 1;
-							item.date = activedate;
-						}					
+						item = {text: i + 1};
+						item.date = new Date(year, i++);
 						months.push(item);
 					}
 					return months;
@@ -227,22 +264,17 @@
 					// 上月显示天数
 					while (i < len) {
 						item = {text: daysofmonth - i++};
-						item.date = year0 + '-' + month0 + '-' + item.text;
+						item.date = new Date(year0, month0 - 1, item.text);
 						days.unshift(item);
 					}
 
 					// 今年
 					i = 0;
 					len = self.getDaysOfMonth(month, year);
-					
 					// 当月显示天数
 					while (i < len) {
 						item = {text: ++i};
-						item.date = year + '-' + (month + 1) + '-' + item.text;
-						if (activeHighlight && (i === day)) {
-							item.active = 1;
-							item.date = activedate;
-						}
+						item.date = new Date(year, month, item.text);
 						days.push(item);
 					}
 					
@@ -250,7 +282,7 @@
 					i = 0;
 					if (month === 11) {
 						year2 += 1;
-						month2 = 0;
+						month2 = -1;
 					}
 					lstwday = new Date(year, month, len).getDay();
 					len = daysofweek - !options.weekStart - lstwday;
@@ -258,7 +290,7 @@
 					// 下月显示天数
 					while (i < len) {
 						item = {text: ++i};
-						item.date = year2 + '-' + (month2 + 1) + '-' + item.text;
+						item.date = new Date(year2, month2 + 1, item.text);
 						days.push(item);
 					}
 					return days;
@@ -268,14 +300,8 @@
 					var hours = [];
 					i = 0;
 					while (i < 24) {
-						item = {text: (i++) + ':00'};
-						// '1970-01-01 00', '1970-01-01 00:00', Date.parse识别后者
-						item.date = year + '-' + (month + 1) + '-' + day + ' ' + item.text;
-						
-						if (activeHighlight && (i === (hour + 1))) {
-							item.active = 1;
-							item.date = activedate;
-						}
+						item = {text: i++};
+						item.date = new Date(year, month, day, item.text);	
 						hours.push(item);
 					}
 					return hours;
@@ -286,24 +312,19 @@
 					var minutes = [];
 					i = 0;
 					while (i < 60) {
-						item = {text: hour + ':' + (i < 10 ? ('0' + i) : i)};
-						item.date = year + '-' + (month + 1) + '-' + day + ' ' + item.text;
-						if (activeHighlight && (i === minute)) {
-							item.active = 1;
-						}						
+						item = {text: i};
+						item.date = new Date(year, month, day, hour, item.text);
 						minutes.push(item);
 						i += options.minuteStep;
 					}
 					return minutes;
 				}
 			};
-				console.log(hour)
 			minute = minute - (minute % options.minuteStep);
-			activedate = year + '-' + (month + 1) + '-' + day + ' ' + hour + ':' + minute;
 
 			items = _show[view]();
 
-			html = '<table><caption>' + this.sprintf(options.viewCaptionFormat[view], isdecade ? {year: [items[1].date, items[10].date]} : date) + '</caption>';
+			html = '<table date="' + date + '"><caption>' + this.sprintf(options.viewCaptionFormat[view], isdecade ? {year: [items[1].date.getFullYear(), items[10].date.getFullYear()]} : date) + '</caption>';
 			if (ismonth) {
 				frag = '<th>' + lang.mo + '</th><th>' + lang.tu + '</th><th>' + lang.we + '</th><th>' + lang.th + '</th><th>' + lang.fr + '</th><th>' + lang.sa + '</th>'
 				html += '<thead><tr>' + (options.weekStart ? (frag + '<th>' + lang.su + '</th>') : ('<th>' + lang.su + '</th>' + frag)) + '</tr></thead>';
@@ -314,16 +335,56 @@
 				if (!(i % cols)) {
 					html += (i === 0) ? '<tbody><tr>' : '</tr><tr>';
 				}
-				html += '<td date="' + item.date + '" class="' + style.day + (item.active ? (' ' + style.active + ' ' + clsactive) : '') + '">' + (options.viewFormat[view] ? this.sprintf(options.viewFormat[view], item.date) : item.text) + '</td>';
+				html += '<td date="' + this.sprintf(_format, item.date) + '" class="' + style.date + '">' + (options.viewFormat[view] ? this.sprintf(options.viewFormat[view], item.date) : item.text) + '</td>';
 				i++;
 			}
 			html += '</tr></tbody></table>';
-			
-			if (options.date.length > 1 && activeHighlight) {
-				// '+h', '+1d', '+1m', '+1y', '+1y'
-				html += this.createView(this.parse(options.viewStep[this.activeView], date), view, false);
+
+			$html = $(html);
+			if (view === 'month') {
+				$html.find('td:not([date^="' + this.sprintf(_format.split(/([^\w]+)/).slice(0, 3).join(''), date) + '"])').addClass(style.edgeDate);
 			}
-			return html;
+			if (view === 'decade') {
+				$html.find('td:first, td:last').addClass(style.edgeDate);				
+			}
+			$html.find('td[date="' + this.sprintf(_format, options.initialDate[0]) + '"]').not('.' + style.edgeDate).addClass(style.activeDate);						
+			
+			
+			if (showDouble && options.showDouble) {
+				// '+h', '+1d', '+1m', '+1y', '+1y'
+				$html = $html.add(this.createView(this.parse('+' + options.viewStep[this.activeView], date, true), view, false));
+			} 
+
+			return $html;
+		}, 
+		// 选择日期范围
+		selectRange: function(rangeStart, rangeEnd) {
+			var 
+			self = this, 
+			options = this.options, 
+			style = options.themes[options.theme].style, 
+			_format = this._format[this.views[this.activeView]], 
+			$td, 
+			date;		
+
+			if (this.activeView - 1 < $.inArray(options.minView, this.views)) {
+				/*
+				rangeStart = rangeStart || this.range[0];
+				rangeEnd = rangeEnd || this.range[1];
+				
+				this.range = [rangeStart, rangeEnd];
+				
+				options.autoselect && this.option('initialDate', [].concat(this.range));					
+			
+				//this.$body.find('[date="' + this.sprintf(_format, this.range[0]) + '"]').addClass(style.rangeStart);
+				//this.$body.find('[date="' + this.sprintf(_format, this.range[1]) + '"]').addClass(style.rangeEnd);			
+				this.$body.find('td').each(function() {
+					$td = $(this);
+					date = self.parse($td.attr('date'));
+					$td.toggleClass(style.selectedDate, (date > rangeStart) && (date < rangeEnd));
+				});
+				*/
+			}		
 		}, 
 		// 获取某年某月的天数
 		getDaysOfMonth: function(month, year) {
@@ -347,6 +408,7 @@
 		}, 
 		// 日期格式化
 		sprintf: function(format, date) {
+			
 			/**
 			 * ISO 8601: yyyy-mm-ddThh:mm:ss[.mmm]
 			 * T 表示后面是日期时间值的时间部分;
@@ -448,38 +510,77 @@
 		// 将日期字符串转换为日期对象
 		// Date.parse识别ISO 8601格式(UTC标准)和1970#01#01%00:00(GMT标准), 
 		// GMT标准下, 分隔符支持除了字母, 数字以外的其他符号(#, %...)
-		parse: function(datestr, date) {
+		parse: function(datestr, date, floor) {
 			if ($.type(datestr) === 'date') return datestr;
 			// if (datestr * 1 == datestr) return new Date(datestr * 1);
 			if (!~$.inArray(datestr.charAt(0), ['-', '+'])) return new Date(Date.parse(datestr));
 			// A timedelta relative to (date || today), eg '-1d', '+6m +1y', etc, where valid units are 's' (second), 'i' (minute), 'h' (hour), 'd' (day), 'w' (week), 'm' (month), and 'y' (year).
 			date = date ||  new Date();		
 			date = {
-				y: date.getFullYear(), 
-				m: date.getMonth(),  // (0 ~ 11) 
-				d: date.getDate(), // (1 ~ 31) 
-				h: date.getHours(), // (0 ~ 23) 
-				i: date.getMinutes(), // (0 ~ 59) 
-				s: date.getSeconds() // // (0 ~ 59)
+				'4': date.getFullYear(), 
+				'3': date.getMonth(),  // (0~11) 
+				'2': date.getDate(), // (1~31) 
+				'1': date.getHours(), // (0~23) 
+				'0': date.getMinutes(), // (0~59)
+				'-1': date.getSeconds()				
+			};
+
+			var self = this, delta, key, 
+			// 快捷键
+			map = {
+				y: '4', 
+				m: '3', 
+				d: '2', 
+				h: '1', 
+				i: '0', 
+				s: '-1',
+				'4': 'y', 
+				'3': 'm', 
+				'2': 'd', 
+				'1': 'h', 
+				'0': 'i'
 			};
 			
-			var 
-			delta, key;
-			
+			// 不大于当前日期的最大日期
+			if (floor) {
+				$.each(date, function(key){
+					if (self.activeView > key) {
+						date[key] = (key == 2) * 1; // day (1~31)
+					}
+				});
+			}
+
+			// '1y 1d ...'
 			$.each(datestr.split(' '), function() {
 				delta = this.slice(0, -1) * 1;
 				key = this.slice(-1);
-				if (key in date) date[key] += delta;
+				if (map[key] in date) {
+					date[map[key]] += delta;
+				}
 			});
-			return new Date(date.y, date.m, date.d, date.h, date.i, date.s);
+			// new Date(2000) vs. new Date(2000, 0)
+			// 现代浏览器中, Date构造函数支持数组参数; IE9及以下版本不支持
+			return new Date(date['4'], date['3'], date['2'], date['1'], date['0'], date['-1']);
 		}, 
 		// 下一视图
 		next: function() {
+			var 
+			options = this.options, 
+			$table = this.$body.find('table');
 			
+			$table.first().remove();
+			this.$body.append(this.createView(this.parse('+' + options.viewStep[this.activeView], this.parse($table.last().attr('date')), true), this.activeView, false));
+			this.selectRange();
 		}, 
 		// 上一视图
 		prev: function() {
+			var 
+			options = this.options, 		
+			$table = this.$body.find('table');
 			
+			$table.last().remove();
+			this.$body.prepend(this.createView(this.parse('-' + options.viewStep[this.activeView], this.parse($table.first().attr('date'), true)), this.activeView, false));			
+			this.selectRange();
 		}
 	});
 	// i18n

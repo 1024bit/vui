@@ -120,38 +120,6 @@
 				'mouseleave tbody tr': function(e) {
 					this.$editBtn.hide();
 				}, 
-				'click a[href], button[href]': function(e) {
-					var $target = $(e.target), 
-						scheme = 'javascript:', fn, 
-						href = $target.attr('href'), 
-						js = href.indexOf(scheme), 
-						context = options.context || this, 
-						id;
-						
-					if (~$.inArray(href, ['', '#'])) return _leave();
-					
-					id = $target.closest('tr').find('input[type=checkbox]:first').val() || 
-						(this.tbodys[this.page - 1] && this.tbodys[this.page - 1].find('input:checked:first').val());
-					
-					// if (id === undefined) return;
-					
-					if (~js) {
-						fn = href.slice(scheme.length);
-						~fn.lastIndexOf(';') && (fn = fn.slice(0, -1));
-						fn && context[fn] && context[fn](e, id);
-						e.preventDefault();
-					} else {
-						$target.attr('href', href + (~href.indexOf('?') ? '&' : '?') + dict.id + '=' + id + '&' + dict.page + '=' + self.page);
-						return _leave();
-					}
-					function _leave() {
-						var evt = $.Event(e);
-						evt.type = 'leave';
-						// 第三方可在gridleave事件中拦截默认行为
-						self._trigger(evt, id);
-						return !evt.isDefaultPrevented();						
-					}
-				},
 				'submit form': function(e) {
 					e.preventDefault();
 				}, 
@@ -163,7 +131,6 @@
 					};
 					this.load(page - 1).done(_done);
 				}, 
-
 
 				//'': function() {}
 				/*
@@ -248,6 +215,9 @@
 				this.$checkbox = this.$activePage.find('input[type=checkbox]').not(':hidden');
 				this.checkedCount = 0;
 			};
+			evtmap[this.widgetEventPrefix + 'leave'] = function(e, id) {
+				id && $(e.target).attr('href', href + (~href.indexOf('?') ? '&' : '?') + dict.id + '=' + id + '&' + dict.page + '=' + self.page);
+			};
 			this._on(evtmap);
 
 			this._on(this.$input, {
@@ -266,8 +236,6 @@
 					$span.text(value);
 				}
 			});
-			
-
 		}, 
 		_paint: function(models) {
 			var 
@@ -456,6 +424,10 @@
 				}				
 			}
 		}, 
+		_getSelectedId: function($target) {
+			return $target.closest('tr').find('input[type=checkbox]:first').val() || 
+			(this.tbodys[this.page - 1] && this.tbodys[this.page - 1].find('input:checked:first').val());		
+		}, 
 		// 保存更改
 		saveChanges: function(e, ajaxOpts) {
 			this.$form.submit();
@@ -507,14 +479,14 @@
 	});
 	// 微型模板函数
 	function tmpl(tpl, data) {
-		var html;
+		var html = '';
 		if (!$.util || !$.util.tmpl) { 
 			var lpos, rpos, key,
-				lb = '<%=', rb = '%>', 
+				lb = '{', rb = '}', 
 				llth = lb.length, rlth = rb.length;
-			lpos = tpl.indexOf('<%=');
+			lpos = tpl.indexOf(lb);
 			if (lpos !== -1) {
-				rpos = tpl.indexOf('%>', lpos + llth);
+				rpos = tpl.indexOf(rb, lpos + llth);
 				key = tpl.slice(lpos + llth, rpos);
 				html += tpl.slice(0, lpos) + ((data[key] === undefined) ? '' : data[key]);
 				html += arguments.callee(tpl.slice(rpos + rlth), data);

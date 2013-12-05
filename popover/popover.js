@@ -7,9 +7,7 @@
  * 事件: popready, popclose, popcancel, popok
  */
 
-		
 (function($) {
-
 	$.widget('hijax.popover', $.hijax.widget, {
 		options: {
 			event: 'click', //  click | hover | focus | manual
