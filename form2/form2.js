@@ -49,7 +49,7 @@
 			sltslt = 'div.' + clspfx + '-select',
 			sltarw = 'a.' + clspfx + '-select-arrow', 			
 			sltopt = 'li.' + clspfx + '-select-option', 			
-			evtmap = {};
+			evtmap = {}, timer = 0;
 			
 			// 复选框事件
 			evtmap['click ' + sltcbx] = function(e) {
@@ -101,16 +101,21 @@
 				}
 			};		
 			evtmap['focus ' + sltslt] = function(e) {
-				var select = $(e.target).closest(sltslt)[0];
-				if ((e.relatedTarget !== select) && !$.contains(select, e.relatedTarget)) {
-					this.select2(e.currentTarget.select, 'focus');
+				if (timer) {
+					clearTimeout(timer);
+					timer = null;
+				}
+				var $current = $(e.currentTarget), select = e.currentTarget.select;
+				if (!$current.hasClass(style.selectFocus)) {
+					this.select2(select, 'focus');
 				}
 			};
 			evtmap['blur ' + sltslt] = function(e) {
-				var select = $(e.target).closest(sltslt)[0];
-				if ((e.relatedTarget !== select) && !$.contains(select, e.relatedTarget)) {
-					this.select2(e.currentTarget.select, 'blur');
-				}
+				var self = this, select = e.currentTarget.select;
+				// 异步
+				timer = setTimeout(function() {
+					self.select2(select, 'blur');
+				}, 0);
 			};				
 
 			this._on(evtmap);
@@ -257,7 +262,7 @@
 				
 				if (!$this.attr('enhanced')) {
 					// 新创建的select
-					$element = $('<div tabIndex="' + settings.tabIndex + '" class="' + clsslt + ' ' + style.select + '"/>');
+					$element = $('<div tabindex="' + settings.tabIndex + '" class="' + clsslt + ' ' + style.select + '"/>');
 					if (!$.contains(self.element[0], $this[0])) {
 						$element.append($this.hide()).css({'position': 'absolute'});
 						settings.place.call($element, self.element);
@@ -270,9 +275,11 @@
 							.append($this.hide());
 					}
 					
+
 					$combox = $('<div style="position:relative;" class="' + clscbx + '"/>');
 					$input = $('<input style="position:absolute;left:0;top:0;" type="text" class="' + style.selectInput + ' ' + clsipt + '" ' + (settings.combox ? '' : 'readonly ') + '/>').appendTo($combox);
-					$arrow = $('<a style="position:absolute;top:0;right:0;" href="javascript:;" class="' + clsarw + ' ' + style.selectArrow + '"/>').appendTo($combox);
+					// tabindex小于0可使元素获得焦点事件而不受Tab键导航 
+					$arrow = $('<a tabindex="-1" style="position:absolute;top:0;right:0;" href="javascript:;" class="' + clsarw + ' ' + style.selectArrow + '"/>').appendTo($combox);
 					$element.append($combox);
 					
 					$optionlist = $('<ul class="' + style.selectOptionList + ' ' + clslst + '"/>').css({'position': 'absolute', left: 0});
