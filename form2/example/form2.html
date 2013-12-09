@@ -1,0 +1,55 @@
+﻿<!doctype html>
+<html>
+	<head>
+		<title>Form2</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<style type="text/css">
+		* {margin:0; padding:0;outline:none}
+		input {border:1px solid blue;padding:0 5px}
+		.form-select-option-list {border:1px solid #ccc;background-color:#fff}
+		.form-select-arrow {border:1px solid blue;background-color:yellow;}
+		</style>
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+		<script type="text/javascript" src="http://jslib.com/jquery/jquery.ui.widget.js"></script>
+		<script type="text/javascript" src="http://hijaxui.com/hijax.widget.js"></script>
+		<script type="text/javascript" src="http://hijaxui.com/form2/form2.js"></script>
+	</head>
+	<body style="padding-top:8px">
+
+		<form>
+			<select id="slt" style="">
+				<option value="1">hello</option>
+				<option value="2">world</option>
+				<option value="3">php</option>
+				<option value="4">perl</option>
+			</select>
+			<button id="btn" type="button">add</button>
+			<button id="btn2" type="button">remove</button>
+			<button id="btn3">btn3</button>
+		</form>
+		<script type="text/javascript">
+			$.hijax.widgetSetup('form2', {
+				themes: {
+					'default': {
+						style: {
+							// 选择框
+							select: '', selectFocus: 'form-select-focus', 
+							selectInput: '', selectArrow: 'form-select-arrow', 
+							selectOptionList: 'form-select-option-list', selectOption: '', selectOptionSelected: ''
+						}
+					}
+				}
+			});
+			
+			$('form').form2();
+			$('#btn').click(function() {
+				$('#slt').select2('add', {text: 'node.js', value: 5}, 3);
+			});			
+			$('#btn2').click(function() {
+				$('#slt').select2('remove', 3);
+			});	
+
+			
+		</script>
+	</body>
+</html>

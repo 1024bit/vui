@@ -567,7 +567,15 @@
 			var $ldg = $loading, $msk = $mask;
 			$ldg && $ldg.hide();
 			$msk && $msk.hide();
-		}	
+		}, 
+		// 设置元素的innerWidth
+		contentWidth: function(outerWidth) {
+			return this.width(outerWidth - parseInt(this.css('padding-left')) - parseInt(this.css('padding-right')) - (parseInt(this.css('border-left-width')) || 0) - (parseInt(this.css('border-right-width')) || 0));
+		}, 		
+		// 设置元素的innerWidth
+		contentHeight: function(outerHeight) {
+			return this.height(outerHeight - parseInt(this.css('padding-top')) - parseInt(this.css('padding-bottom')) - (parseInt(this.css('border-top-width')) || 0) - (parseInt(this.css('border-bottom-width')) || 0));
+		}
 	});
 	
 	/** $扩展
@@ -622,7 +630,20 @@
 				for (key in arg) return false;
 			}
 			return true;
-		}
+		}, 
+        compact: function (obj) {
+            var result = [];
+            if ($.type(obj) !== 'array') {
+                result = {};
+                obj = $.extend(true, {}, obj);
+            }
+            $.each(obj, function (key, val) {
+                if (val !== undefined && val !== null) {
+                    result[key] = val;
+                }
+            });
+            return result;
+        }		
 	});
 	
 	/** $.hijax扩展

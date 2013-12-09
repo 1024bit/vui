@@ -20,16 +20,12 @@
 			themes: {
 				'default': {
 					style: {
-						checkbox: '',
-						checkboxChecked: '', 
-						checkboxDisabled: '', 
-						select: '', 
-						selectFocus: '', 
-						selectInput: '', 
-						selectArrow: '', 
-						selectOptionList: '', 
-						selectOption: '', 
-						selectOptionSelected: ''
+						// 复选框
+						checkbox: '', checkboxChecked: '', checkboxDisabled: '', 
+						// 选择框
+						select: '', selectFocus: '', 
+						selectInput: '', selectArrow: '', 
+						selectOptionList: '', selectOption: '', selectOptionSelected: ''
 					}
 				}
 			}
@@ -37,14 +33,14 @@
 		widgetEventPrefix: 'form',
 		_createWidget: function(options, element) {
 			// options.element必须为jQuery对象
-			if (!$.nodeName((options.element && options.element[0]) || element, 'form')) {
+			if (!$.nodeName((options && options.element && options.element[0]) || element, 'form')) {
 				return $.error("Only can initialize on form element");
 			}	
 			this._super.apply(this, arguments)
 		}, 
 		_attachEvent: function() {
 			this._super.apply(this, arguments);
-			
+
 			var 
             options = this.options, 
             style = options.themes[options.theme].style, 
@@ -64,43 +60,68 @@
 			
 			// 选择框事件
 			evtmap['click ' + sltarw] = function(e) {
-				$(e.target).closest(sltslt)[0].optionlist.show();
+				var 
+				$element = $(e.target).closest(sltslt), 
+				$optionlist = $($element[0].optionlist), 
+				$btmli, 
+				len = $element[0].select.options.length, 
+				wtop = this.window.scrollTop(), wh = this.window.height(), wbtm = wtop + wh, 
+				etop, eh, ebtm, h;
+				
+				$optionlist.show();
+				// 计算高度
+				if (len <= $element[0].select.size) {
+					$btmli = $optionlist.find('li:nth-child(' + len + ')');
+					$optionlist.height((($btmli.length && $btmli.position().top) || 0) - parseInt($optionlist.css('padding-top')) + $btmli.outerHeight(true));
+				}
+				
+				etop = $element.offset().top, eh = $element.outerHeight(), ebtm = etop + eh, h = $optionlist.outerHeight();
+				
+				// 超出视窗
+				if (ebtm + h > wbtm) {
+					if (etop - wtop > wbtm - ebtm) {
+						$optionlist.css('top', '-' + h + 'px');
+					} else {
+						$optionlist.css('top', eh);
+					}
+				}				
+				e.preventDefault();
 			};
 			evtmap['click ' + sltopt] = function(e) {
 				var 
-				$current = $(e.currentTarget), $select = $(this.element.select), 
-				oldval = $(this.element.input).val(), newval = $current.attr('value');
-				if (oldval !== newval) $select.val(newval).trigger('change');
+				element = $(e.target).closest(sltslt)[0], 
+				$input = $(element.input), $current = $(e.currentTarget), 
+				oldval = $input.val(), newval = $current.attr('value');
+				
+				$(element.optionlist).hide();
+				if (oldval !== newval) {
+					$input.val($current.text());
+					//$(element).addClass(style.selectOptionSelected);
+					$(element.select).val(newval).trigger('change');
+				}
 			};		
-			// add, remove
-			evtmap['option ' + sltslt] = function(e, settings) {
-				// 计算高度
-				var 
-				$target = $(e.target), $btmli, $optionlist = $(e.target.optionlist), 
-				len = e.target.select.options.length;
-				if (len <= settings.size) {
-					$btmli = $target.find('li:nth-child(' + len + ')');
-					$optionlist.height($btmli.position().top + $btmli.outerHeight(true));
-				}
-				// 超出视窗
-				if (($optionlist.offset().top + $optionlist.outerHeight()) > (this.document.scrollTop() + this.document.height())) {
-					$optionlist.css('top', '-=' + $optionlist.outerHeight());
+			evtmap['focus ' + sltslt] = function(e) {
+				var select = $(e.target).closest(sltslt)[0];
+				if ((e.relatedTarget !== select) && !$.contains(select, e.relatedTarget)) {
+					this.select2(e.currentTarget.select, 'focus');
 				}
 			};
-			
-			evtmap['focusin ' + sltslt] = function(e) {
-				this.select2(e.currentTarget.select, 'focus');
-			};
-			evtmap['focusout ' + sltslt] = function(e) {
-				this.select2(e.currentTarget.select, 'blur');
+			evtmap['blur ' + sltslt] = function(e) {
+				var select = $(e.target).closest(sltslt)[0];
+				if ((e.relatedTarget !== select) && !$.contains(select, e.relatedTarget)) {
+					this.select2(e.currentTarget.select, 'blur');
+				}
 			};				
 
 			this._on(evtmap);
+			this.on('option.add option.remove', sltslt, function(e, settings) {
+				// do something
+			});
 		}, 
 		_paint: function(models) {
-			this.$('input[type=checkbox]').checkbox2();
-			this.$('input[type=radio]').radio2();
-			this.$('select').select2();
+			// this.$('input[type=checkbox]:not([enhanced])').checkbox2();
+			// this.$('input[type=radio]:not([enhanced])').radio2();
+			this.$('select:not([enhanced])').select2();
 		}, 	
 		
 		// 复选框
@@ -185,7 +206,9 @@
 			$element, $this, $combox, $optionlist, $input, $btmli,
 			htmllist, method, args, 
 			implementing = {'add': add, 'remove': remove, 'focus': focus, 'blur': blur}, 
-			selectedText, dim, pos;
+			selectedText, dim, pos, 
+			select, l = $select.size(), 
+			delimiter = ', ';
 			
 			// 方法
 			if ($.type(settings) === 'string') {
@@ -196,32 +219,36 @@
 				args = [].slice.call(arguments, 2);
 			}
 			
-			$select.each(function() {
+			while (l--) {
 				htmllist = '';
 				selectedText = [];
 				
-				$this = $(this);
+				$this = $select.eq(l);
+				select= $select.get(0);
 				if (!$.nodeName($this[0], 'select')) return;
 
 				settings = $.extend({}, {
 					// attributes(html5 && html4)
 					// form(html5 attribute)(非设置项)
 					autofocus: $this.attr('autofocus'), 
-					data: this.options.length ? this.options : $this.attr('data'), 		
-					disabled: this.disabled, 
-					multiple: this.multiple, 
-					size: this.size, 
-					tabIndex: this.tabIndex
+					data: select.options.length ? select.options : $this.attr('data'), 		
+					disabled: select.disabled, 
+					multiple: select.multiple, 
+					size: select.size, 
+					tabIndex: select.tabIndex
 				}, {
 					combox: false, 
 					tabIndex: 1, 
 					maxSize: 20, // chrome: 20, ie: 30	
 					place: $.noop
 				}, settings);
+				
 				if (!settings.size) settings.size = settings.maxSize;
 				settings.size = Math.min(settings.size, settings.maxSize);
 				// 错误按服务对象分两种: 面向用户, 面向程序猿
-				!settings.size && throw 'Size cannot be zero.';
+				if (!settings.size) {
+					throw 'Size cannot be zero.';
+				}
 				
 				if ($this.attr('enhanced') && !method) {
 					$this.parent().after($this).remove();
@@ -238,86 +265,153 @@
 						// An element is said to be positioned if it has a CSS position attribute of relative, absolute, or fixed.
 						pos = $this.css('position');
 						$element
-							.css({'position': (!~('relative, absolute, fixed'.indexOf(pos)) ? 'relative' : pos)});
+							.css({'position': (!~('relative, absolute, fixed'.indexOf(pos)) ? 'relative' : pos)})
 							.insertAfter($this)
 							.append($this.hide());
 					}
-
-					$combox = $('<div class="' + clscbx + '"/>');
-					$input = $('<input type="text" class="' + style.selectInput + ' ' + clsipt + '" readonly="' + settings.combox + '"/>').appendTo($combox);
-					$arrow = $('<a href="#" style="position:absolute" class="' + clsarw + ' ' + style.selectArrow + '"/>').appendTo($combox);
+					
+					$combox = $('<div style="position:relative;" class="' + clscbx + '"/>');
+					$input = $('<input style="position:absolute;left:0;top:0;" type="text" class="' + style.selectInput + ' ' + clsipt + '" ' + (settings.combox ? '' : 'readonly ') + '/>').appendTo($combox);
+					$arrow = $('<a style="position:absolute;top:0;right:0;" href="javascript:;" class="' + clsarw + ' ' + style.selectArrow + '"/>').appendTo($combox);
 					$element.append($combox);
 					
-					$optionlist = $('<ul class="' + style.selectOptionList + ' ' + clslst + '"/>').css({'position': 'absolute', left: 0, top: $combox.outerHeight()});
+					$optionlist = $('<ul class="' + style.selectOptionList + ' ' + clslst + '"/>').css({'position': 'absolute', left: 0});
 					if ($.type(settings.data) === 'string') {
 						$.ajax({
 							url: settings.data
 						}).done(function(data) {
-							settings.data = data;
+							// 考虑两种场景: 1. select不支持data attribute; 2. 设置settings.data覆盖select.options
+							$.each(data, function() {
+								select.add($('<option />').text(option.text).val(option.value).get(0), this.options[index]);
+							});
+							settings.data = select.options;
 						});
 					}
-					
+
 					$.each(settings.data, function(idx) {
 						if (this.selected) {
 							selectedText.push(this.text);
 						}
 						htmllist += _createOption(this);
 					});
-
-					$input.val(selectedText.join(','));
+					$input.val(selectedText.join(delimiter));
 									
 					// 获取原生控件尺寸, 位置
-					dim = {width: $this.css('width'), height: $this.css('height')};
+					// .css与.width已兼容, 唯一的区别是前者返回值带单位(字符类型)
+					dim = {width: $this.outerWidth(), height: $this.outerHeight()};
 					pos = {left: $this.css('left'), top: $this.css('top')};
+					(pos.left === 'auto') && (pos.left = 0);
+					(pos.top === 'auto') && (pos.top = 0);
 					$element.css(pos);
-					$optionlist.css('width', dim.width);
-					$input.css({'width': dim.width - $arrow.outerWidth(), 'height': dim.height});
+					$element.contentWidth(dim.width);
+					$combox.contentHeight(dim.height);
+					$arrow
+						.contentHeight(dim.height)
+						.contentWidth(17);
+					$input
+						.contentWidth(dim.width - $arrow.outerWidth(true))
+						.contentHeight(dim.height);       
 					$element.append($optionlist.append(htmllist));
-					$btmli = $optionlist.find('li:nth-child(' + settings.size + ')');
-					$optionlist.height($btmli.position().top() + $btmli.outerHeight(true)).hide();
+					$btmli = $optionlist.find('li:nth-child(' + Math.min(settings.data.length, settings.size) + ')');
+					$optionlist
+						.contentWidth(dim.width)
+						.height($btmli.position().top - parseInt($optionlist.css('padding-top')) + $btmli.outerHeight())
+						.hide();
 					
 					if (settings.disabled) {
 						// IE8以下不支持bottom, right属性
-						$mask = $('<div/>').insertAfter($element).css({position: 'absolute', left: pos.left, top: pos.left, width: dim.width, height: dim.height, opacity: .25});
+						$mask = $('<div style="position:absolute;left:0;top:0;width:100%;height:100%;"/>').appendTo($element);
 					}
 					
 					if (settings.autofocus) focus();
 
-					$element[0].select = this;
+					$element[0].select = select;
 					$element[0].input = $input[0];
 					$element[0].optionlist = $optionlist[0];
-					$this.addAttr('enhanced');
+					$this
+						.attr('disabled', settings.disabled)
+						.attr('multiple', settings.multiple)
+						.attr('size', settings.size);					
+					$this.addAttr('enhanced', 'enhanced');
+				} else {
+					$element = $this.parent();
+					$combox = $element.find('.' + clscbx);
+					$optionlist = $element.find('.' + clslst);
+					$input = $element.find('.' + clsipt);
 				}
 
 				if (method) {
-					implementing[method].apply(this, args.concat([$element, $input, $optionlist]));
+					implementing[method].apply(select, args);
 				}
 				
 				// 方法
 				function _createOption(option) {
 					if ($.type(option) !== 'object') return '';
-					return '<li class="' + (option.selected ? style.selectOptionSelected : '') + ' ' + style.selectOption + ' ' + clsopt + '" value="' + option.value + '"><a href="#">' + (settings.multiple ? ('<label><input type="checkbox" />' + option.text + '</label>') : option.text) + '</a></li>';			
+					return '<li class="' + (option.selected ? style.selectOptionSelected : '') + ' ' + style.selectOption + ' ' + clsopt + '" value="' + option.value + '"><a href="javascript:return false;">' + (settings.multiple ? ('<label><input type="checkbox" />' + option.text + '</label>') : option.text) + '</a></li>';			
 				}
-				// 添加一个选项
+				// 添加一个选项, 索引从0计数, 支持负数
 				function add(option, index) {
-					$optionlist.find('li:nth-child(' + index + ')').before(_createOption(option));
-					this.add($('<option />').text(option.text).val(option.value).get(0), this.options[index]);
+					if (!this.options.length) option.selected = true;
+					var len = this.options.length || 0, selectedText = [], selectedIndex;
+					if (index < 0) {
+						index = Math.max(index + len + 1, 0);
+					}
+					index = Math.min(index, len);
+					index 
+						? $optionlist.find('li:nth-child(' + index + ')').after(_createOption(option)) 
+						: $optionlist.prepend(_createOption(option));
+					// May be -1	
+					selectedIndex = this.selectedIndex;
+					this.add($('<option />').text(option.text).val(option.value).attr('selected', !!option.selected).get(0), this.options[index]);
+					if (option.selected) {
+						if (!settings.multiple) {
+							$optionlist.find('li:nth-child(' + (selectedIndex + 1) + ')').removeClass(style.selectOptionSelected);
+						}
+						$.each(this.options, function() {
+							if (this.selected) {
+								selectedText.push(this.text);
+							}
+						});
+						$input.val(selectedText.join(delimiter));	
+					}						
 					// 与组件实例无关联且作为API开放的事件, 不建议加上组件事件命名空间
-					$(this).trigger('option.add', settings);
+					$element.trigger('option.add', settings);
 					// $(this).trigger('option.add' + self.eventNamespace, settings);
 				}
 				// 删除一个选项
+				// selectObject.remove(index): 如果指定的下标比0小, 或者大于或等于选项的数目, remove()方法会忽略它并什么也不做
 				function remove(index) {
-					$optionlist.find('li:nth-child(' + index + ')').remove();
-					this.remove(index);
-					$(this).trigger('option.remove', settings);				
+					if (!this.options.length) return;
+					var len = this.options.length - 1, option, selectedText = [];
+					if (index < 0) {
+						index = Math.max(index + len + 1, 0);
+					}
+					index = Math.min(index, len);
+					option = this.options[index];
+					$optionlist.find('li:nth-child(' + (index + 1) + ')').remove();
+
+					this.remove(index);	
+					
+					if (option.selected) {
+						if (!settings.multiple) {
+							$optionlist.find('li:first').addClass(style.selectOptionSelected);
+							this.options.length && (this.options[0].selected = true);
+						}
+						$.each(this.options, function() {
+							if (this.selected) {
+								selectedText.push(this.text);
+							}
+						});
+						$input.val(selectedText.join(delimiter));
+					}
+						
+					$element.trigger('option.remove', settings);				
 				}
 				// focus
 				// IE7及以上版本, 现代浏览器激活到页面所在视窗(或标签)会重新定位光标, 从而触发focus动作
 				// 不同浏览器对"激活"的定义不同(最小化与最大化, 标签切换, alert弹出框等)
 				function focus() {
 					$element.addClass(style.selectFocus);
-					$input.focus();
 					// To run an hidden element's focus event handlers: 
 					// 1.$(this).focus() vs. 2.$(this).trigger('focus') vs. 2.$(this).triggerHandler('focus')
 					// IE6支持1, 2, 3; 其他支持3
@@ -327,20 +421,15 @@
 				// blur
 				function blur() {
 					$element.removeClass(style.selectFocus);
-					$input.blur();
 					$optionlist.hide();
 					$(this).triggerHandler('blur');
 				}
-			});	
+			}	
 		}, 
 		// Supported types: date datetime datetime-local month range time week
-		input2: function(selector, settings) {
-						
-		}, 
+		input2: function(selector, settings) {}, 
 		// 单选按钮
-		radio2: function(selector, settings) {
-		
-		}	
+		radio2: function(selector, settings) {}	
 	});
 	
 	// 子插件
