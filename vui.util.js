@@ -5,11 +5,11 @@
  *  Copyright(c) 2014 Cherish Peng<cherish.peng@vip.com>
  *  MIT Licensed
  */
-define("vui.util", function(require, exports) {
+define(function(require, exports) {
 	var 
 	$ = require('jquery');
 	
-	$.extend({	
+	return {	
 		// Unix mode: 7 = 1 + 2 + 4
 		getMod: function(mod) {
 			var factors = [], sum = 1;
@@ -23,8 +23,10 @@ define("vui.util", function(require, exports) {
 			_factor(1);
 			return factors;
 		}, 
+		
 		// Uppercase the first letter of str
-		ucfirst: function(str) {
+		capitalize: function(str) {
+			if (str.capitalize) return str.capitalize();
 			return str.replace(/^([a-z])/i, function (m) {
 				return m.toUpperCase();
 			});
@@ -37,7 +39,8 @@ define("vui.util", function(require, exports) {
 				for (var k in glob) return false;
 			}
 			return true;
-		}, 
+		},
+		
 		// Remove undefined and null from array or object
 		compact: function(obj) {
 			var result = [];
@@ -51,6 +54,37 @@ define("vui.util", function(require, exports) {
 				}
 			});
 			return result;
-		}		
-	});
+		}, 
+		// Return the value at the index or the last one
+		getOrLast: function(arr, idx) {
+			if ((idx === undefined) || (arr[idx] === undefined)) {
+				return arr[arr.length - 1];
+			}
+			return arr[idx];
+		}, 
+		// Repeat str `l` times
+		repeat: function(str, l) {
+			return new Array(l+1).join(str);
+		}, 
+		// Simple and High-Performance template engine
+		tpl: function(tpl, data) {
+			var 
+			lpos, rpos, key,
+			lb = '<%=', rb = '%>', 
+			llth = lb.length, rlth = rb.length, 
+			html = '';
+				
+			lpos = tpl.indexOf(lb);
+			if (lpos !== -1) {
+				rpos = tpl.indexOf(rb, lpos + llth);
+				key = tpl.slice(lpos + llth, rpos);
+				html += tpl.slice(0, lpos) + ((data[key] === undefined) ? '' : data[key]);
+				html += arguments.callee(tpl.slice(rpos + rlth), data);
+			} else {
+				html = tpl;
+			}			
+
+			return html;
+		}				
+	};
 });

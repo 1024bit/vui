@@ -68,7 +68,7 @@
 		widgetEventPrefix: 'upload', 
 		swfobject: null, 
 		_fileTpl: '', 
-		_paint: function(models) {
+		_draw: function(models) {
 			var 
 			self = this, 
             options = this.options, 
@@ -143,7 +143,7 @@
 			var 
 			self = this, 
 			filelist = '', 
-			isDefaultPrevented = this._trigger({type: 'select'}, [files]), 
+			isDefaultPrevented = this._trigger('select', [files]), 
 			e = {};
 			if (!isDefaultPrevented) return;
 
@@ -157,7 +157,7 @@
 			this.$filelist.html(filelist).show();
 		},
 		onOpen: function(file, files) {
-			var isDefaultPrevented = this._trigger({type: 'open'}, file);
+			var isDefaultPrevented = this._trigger('open', file);
 			if (!isDefaultPrevented) return;		
 		}, 
 		onProgress: function(file, files) {
@@ -171,7 +171,7 @@
 			sltrt = '.' + clspfx + '-remain-time', 
 			sltspd = '.' + clspfx + '-speed', 
 			$file = this.$filelist.find('#' + file.id), 
-			isDefaultPrevented = this._trigger({type: 'progress'}, file);
+			isDefaultPrevented = this._trigger('progress', file);
 			if (!isDefaultPrevented) return;
 
 			$file
@@ -188,7 +188,7 @@
 			sltnet = '.' + clspfx + '-network', 
 			sltopt = '.' + clspfx + '-operation', 
 			$file = this.$filelist.find('#' + file.id), 
-			isDefaultPrevented = this._trigger({type: 'success'}, file);
+			isDefaultPrevented = this._trigger('success', file);
 			if (!isDefaultPrevented) return;			
 			
 			$file.find(sltnet).hide();		
@@ -200,7 +200,7 @@
 			clspfx = this.namespace + '-' + options.prefix, 
 			sltccl = '.' + clspfx + '-cancel-btn', 
 			$file = this.$filelist.find('#' + file.id), 
-			isDefaultPrevented = this._trigger({type: 'error'}, file);
+			isDefaultPrevented = this._trigger('error', file);
 			if (!isDefaultPrevented) return;			
 
 			$file.find(sltccl).attr('href', 'javascript:reupload;').html('重新上传');
@@ -210,11 +210,11 @@
 			if (!isDefaultPrevented) return;
 		}, 
 		onCompleteData: function(file, files) {
-			var isDefaultPrevented = this._trigger({type: 'completedata'}, file);
+			var isDefaultPrevented = this._trigger('completedata', file);
 			if (!isDefaultPrevented) return;		
 		}, 
 		onCancel: function(file, files) {
-			var isDefaultPrevented = this._trigger({type: 'cancel'}, file);
+			var isDefaultPrevented = this._trigger('cancel', file);
 			if (!isDefaultPrevented) return;		
 		}, 
 

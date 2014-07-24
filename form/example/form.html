@@ -1,0 +1,75 @@
+﻿<!doctype html>
+<html>
+	<head>
+		<title>form</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<style type="text/css">
+		* {margin:0; padding:0;outline:none}
+		</style>
+		<link type="text/css" rel="stylesheet" href="http://global.vip.com/skin/frontend/vip/default/css/global.css" />
+		<link rel="stylesheet" type="text/css" href="http://global.vip.com/skin/frontend/vip/default/css/local.css" media="all" />
+		<script type="text/javascript" src="http://global.vip.com/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="http://global.vip.com/js/jquery/jquery.1.11.js"></script>	
+	</head>
+	<body style="padding:300px">
+
+		<form>
+			<select id="slt">
+				<option value="1">hello</option>
+				<option value="2">world</option>
+				<option value="3">php</option>
+				<option value="4">perl</option>
+			</select>
+			<div class="">
+				<button id="btn" type="button">add</button>
+				<button id="btn2" type="button">remove</button>
+				<button id="btn3">btn3</button>
+			</div>			
+		</form>
+		<script type="text/javascript">
+			jNode.set({
+				deps: [
+					"/js/jquery/jquery.ui.widget.js", 
+					"/js/lib/jq-plugins/jquery.fn.attr.js",
+					"/js/lib/jq-plugins/jquery.fn.metadata.js",
+					"/js/lib/jq-plugins/jquery.fn.dimension.js",
+				], 
+				alias: {
+					"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js"
+				}, 
+				vars: {
+					lang: "en"
+				}
+			});
+			jNode.require([
+				"/js/lib/vui/form/form"
+			], function() {
+				$.vui.widgetSetup('form', {
+					themes: {
+						'default': {
+							style: {
+								// 选择框
+								select: 'vip-select', 
+								selectFocus: 'vip-select-focus', 
+								selectHover: 'vip-select-hover',  
+								selectInput: 'vip-select-input', 
+								selectArrow: 'vip-select-arrow icon-select-down-arrow', 
+								selectOptionList: 'vip-select-option-list', 
+								selectOption: 'vip-select-option', 
+								selectOptionSelected: 'vip-select-selected'
+							}
+						}
+					}
+				});
+				$('form').form();
+				$('#btn').click(function() {
+					$('#slt').select('add', {text: 'node.js', value: 5}, 3);
+				});			
+				$('#btn2').click(function() {
+					$('#slt').select('remove', 3);
+				});
+			});
+		</script> 		
+		
+	</body>
+</html>

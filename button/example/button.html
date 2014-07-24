@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Debug</title>
+		<link type="text/css" rel="stylesheet" href="http://global.vip.com/skin/frontend/vip/default/css/global.css" />
+		<link rel="stylesheet" type="text/css" href="http://global.vip.com/skin/frontend/vip/default/css/local.css" media="all" />
+		<script type="text/javascript" src="http://global.vip.com/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="http://global.vip.com/js/jquery/jquery.1.11.js"></script>
+		<style type="text/css">
+		button{margin-right: 10px;vertical-align: bottom;}
+		div.button a{vertical-align: bottom;}
+		</style>
+	</head>
+	<body>
+		<div class="wrap button" style="border-bottom: 1px solid #333; padding: 40px 0;">
+			<button class="button-ajax">Base Button</button>
+			<button class="button-ajax-pink">Pink Button</button>
+			<button class="button-ajax-white">White Button</button>
+		</div>
+		<script type="text/javascript">
+	
+			jNode.set({
+				deps: [
+					"/js/jquery/jquery.ui.widget.js", 
+					"/js/lib/jq-plugins/jquery.fn.attr.js",
+					"/js/lib/jq-plugins/jquery.fn.metadata.js"
+				], 
+				alias: {
+					"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js"
+				}, 
+				vars: {
+					lang: "en"
+				}
+			});
+			jNode.require([
+				"/js/lib/vui/button/button"
+			], function() {
+				$.vui.widgetSetup('button', {
+					themes: {
+						'default': {
+							style: {
+								button: 'btn-ajax', 
+								btnDisabled: 'btn-disabled', 
+								btnHover: '', 
+								btnActive: '', 
+								btnLoading: 'btn-loading'
+							}
+						},
+						'pink': {
+							style: {
+								button: 'button-ajax-pink', 
+								btnDisabled: 'btn-disabled', 
+								btnHover: '', 
+								btnActive: '', 
+								btnLoading: 'btn-loading'
+							}
+						},
+						'white': {
+							style: {
+								button: 'button-ajax-white', 
+								btnDisabled: 'btn-disabled', 
+								btnHover: '', 
+								btnActive: '', 
+								btnLoading: 'btn-loading'
+							}
+						}
+					}
+				});
+
+				$('.button-ajax').button({
+					click: function() {
+						return $.Deferred(function(deferred) {
+							setTimeout(function() {
+								deferred.resolve();
+							}, 5000);
+						});
+					}
+				}).click(function() {
+					console.log("I am the original btn's event!")
+				});
+				$('.button-ajax-pink').button({
+					theme:'pink',
+					click: function() {
+						return $.Deferred(function(deferred) {
+							setTimeout(function() {
+								deferred.resolve();
+							}, 5000);
+						});
+					}
+				});
+				$('.button-ajax-white').button({
+					theme:'white',
+					click: function() {
+						return $.Deferred(function(deferred) {
+							setTimeout(function() {
+								deferred.resolve();
+							}, 5000);
+						});
+					}
+				});
+
+			});
+		</script>  
+	</body>
+</html>

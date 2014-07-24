@@ -1,16 +1,15 @@
 /** 
- *  VUI's `form2` class, for form beautify and form progressive enhancement
- *  
+ *  VUI's `form` class, for form beautify and form progressive enhancement
  *  
  *  Inspiration:
  *  Form elements cut off from form that is not the meaning of existence
  *  Autocomplete's datasource: server, local
  *  
  *  Usage: 
- * 	$(formselector).form2(options)
- * 	$(formselector).form2('checkbox2|radio2|select2', options);
- * 	$(checkboxselector).checkbox2(options), ... 
- * 	$(formselector).data('vui-form2').checkbox2(options), ...
+ * 	$(formselector).form(options)
+ * 	$(formselector).form('checkbox|radio|select', selector, settings)
+ * 	$(checkboxselector).checkbox(options), ... 
+ * 	$(formselector).data('vui-form').checkbox(options), ...
  *  
  *  Event:
  *  
@@ -20,7 +19,13 @@
  *  MIT Licensed 
  */
 define(function(require, exports) {
-	$.widget('vui.form2', $.vui.widget, {
+	var 
+	$ = require('jquery');
+	require('jquery.ui.widget');
+	require('../vui.widget');
+	require('jquery.fn.dimension');
+	
+	$.widget('vui.form', $.vui.widget, {
 		options: {
 			themes: {
 				'default': {
@@ -28,14 +33,13 @@ define(function(require, exports) {
 						// Checkbox
 						checkbox: '', checkboxChecked: '', checkboxDisabled: '', 
 						// Select
-						select: '', selectFocus: '', 
+						select: '', selectFocus: '', selectHover: '', 
 						selectInput: '', selectArrow: '', 
 						selectOptionList: '', selectOption: '', selectOptionSelected: ''
 					}
 				}
 			}
 		},  
-		widgetEventPrefix: 'form',
 		_createWidget: function(options, element) {
 			// options.element must be jQuery object
 			if (!$.nodeName((options && options.element && options.element[0]) || element, 'form')) {
@@ -63,26 +67,33 @@ define(function(require, exports) {
 				$(e.target.checkbox).prop('checked', $target.hasClass(style.checkboxChecked));
 			};
 			
-			// 选择框事件
+			// Select event
 			evtmap['click ' + sltarw] = function(e) {
 				var 
 				$element = $(e.target).closest(sltslt), 
 				$optionlist = $($element[0].optionlist), 
 				$btmli, 
 				len = $element[0].select.options.length, 
-				wtop = this.window.scrollTop(), wh = this.window.height(), wbtm = wtop + wh, 
-				etop, eh, ebtm, h;
+				wtop, wh, wbtm, etop, eh, ebtm, h;
 				
+				if ($optionlist.is(':visible')) {
+					$optionlist.hide();
+					return;
+				}
+				
+				wtop = this.window.scrollTop();
+				wh = this.window.height(), 
+				wbtm = wtop + wh;
 				$optionlist.show();
-				// 计算高度
+				// Calc height
 				if (len <= $element[0].select.size) {
 					$btmli = $optionlist.find('li:nth-child(' + len + ')');
-					$optionlist.height((($btmli.length && $btmli.position().top) || 0) - parseInt($optionlist.css('padding-top')) + $btmli.outerHeight(true));
+					$optionlist.css('height', $btmli.position().top + $btmli.outerHeight(true) + 'px');
 				}
 				
 				etop = $element.offset().top, eh = $element.outerHeight(), ebtm = etop + eh, h = $optionlist.outerHeight();
 				
-				// 超出视窗
+				// Out of viewport
 				if (ebtm + h > wbtm) {
 					if (etop - wtop > wbtm - ebtm) {
 						$optionlist.css('top', '-' + h + 'px');
@@ -95,16 +106,21 @@ define(function(require, exports) {
 			evtmap['click ' + sltopt] = function(e) {
 				var 
 				element = $(e.target).closest(sltslt)[0], 
-				$input = $(element.input), $current = $(e.currentTarget), 
-				oldval = $input.val(), newval = $current.attr('value');
+				$input = $(element.input), $current = $(e.currentTarget), $optionlist = $(element.optionlist), 
+				oldval = element.select.value, newval = $current.attr('value');
 				
-				$(element.optionlist).hide();
+				$optionlist.hide();
 				if (oldval !== newval) {
 					$input.val($current.text());
-					//$(element).addClass(style.selectOptionSelected);
+					$current.addClass(style.selectOptionSelected);
+					$optionlist.find('[value=' + oldval + ']').removeClass(style.selectOptionSelected);
 					$(element.select).val(newval).trigger('change');
 				}
-			};		
+			};
+			evtmap['mouseenter ' + sltslt] 
+			= evtmap['mouseleave ' + sltslt] = function(e) {
+				$(e.currentTarget).toggleClass(style.selectHover, e.type === 'mouseenter');
+			};
 			evtmap['focus ' + sltslt] = function(e) {
 				if (timer) {
 					clearTimeout(timer);
@@ -112,14 +128,14 @@ define(function(require, exports) {
 				}
 				var $current = $(e.currentTarget), select = e.currentTarget.select;
 				if (!$current.hasClass(style.selectFocus)) {
-					this.select2(select, 'focus');
+					this.select(select, 'focus');
 				}
 			};
 			evtmap['blur ' + sltslt] = function(e) {
 				var self = this, select = e.currentTarget.select;
-				// 异步
+				// Async
 				timer = setTimeout(function() {
-					self.select2(select, 'blur');
+					self.select(select, 'blur');
 				}, 0);
 			};				
 
@@ -128,15 +144,15 @@ define(function(require, exports) {
 				// do something
 			});
 		}, 
-		_paint: function(models) {
-			// this.$('input[type=checkbox]:not([enhanced])').checkbox2();
-			// this.$('input[type=radio]:not([enhanced])').radio2();
-			this.$('select:not([enhanced])').select2();
+		_draw: function(models) {
+			//this.$('input[type=checkbox]:not([vui-enhanced])').checkbox();
+			//this.$('input[type=radio]:not([vui-enhanced])').radio();
+			this.$('select:not([vui-enhanced])').select();
 		}, 	
-		
-		// 复选框
-		// settings: {place: function() {}, checked: false, disabled: false}
-		checkbox2: function(selector, settings) {
+				
+		// Checkbox
+		// settings: {checked: false, disabled: false}
+		checkbox: function(selector, settings) {
 			var 
 			self = this, 
             options = this.options, 
@@ -152,16 +168,11 @@ define(function(require, exports) {
 				$element = $this.parent();
 				settings = $.extend({}, {disabled: $this.prop('disabled'), checked: $this.prop('checked')}, settings);
 			
-				if (!$this.attr('enhanced')) {
-					// 新创建的checkbox
+				if (!$this.attr('vui-enhanced')) {
+					// New created checkbox
 					$element = $('<span class="' + clschkbx + ' ' + style.checkbox + '"/>');
-					if (!$.contains(self.element[0], $this[0])) {
-						$element.append($this.hide());
-						settings.place.call($element);
-					} else {
-						$element.insertAfter($this).append($this.hide());
-					}
-					$this.attr('enhanced', 'enhanced');
+					$element.insertAfter($this).append($this.hide());
+					$this.attr('vui-enhanced', 'vui-enhanced');
 					$element[0].checkbox = $this[0];
 				} 
 
@@ -173,34 +184,35 @@ define(function(require, exports) {
 		}, 
 		
 		/** 
-		 * 选择框
-		 * settings: {
-		 *	    // 供自动插入数据
-		 *      data: url || {
+		 * Simulate select 
+		 *
+		 * @param {Object} settings: {
+		 *	    // Datasource
+		 *      data: url || [{
 		 *			text: '', 
 		 *			value: '', 
 		 *			selected: false
-		 *		}, 
-		 *		// 
-		 *		place: function($element, $form) {}, 
-		 *      // 设置或返回下拉列表中被选项目的索引号
+		 *		}], 
+		 *      // Read or write selected index
 		 *		selectedIndex: number, 
-		 *      // 设置或返回是否应禁用下拉列表
+		 *      // Read or write disabled prop
 		 *		disabled: boolean, 
-		 *      // 设置或返回是否选择多个项目
+		 *      // Read or write multiple prop
 		 *		multiple: boolean, 
+		 *      // Whether editable or not
 		 *		combox: boolean
-		 *      // 设置或返回下拉列表中的可见行数
+		 *      // Read or write visible items
 		 *      size: number
-		 *		// 设置或返回下拉列表的 id
+		 *		// Read or write id prop
 		 *		id: string
-		 *      // 设置或返回下拉列表的名称
+		 *      // Read or write name prop
 		 *      name: string
 		 *	} 
-		 * 方法: add(), blur(), focus(), remove()
-		 * 事件: option.add, option.remove
+		 * @method {Function} add, blur, focus, remove
+		 * @event {Event} option.add, option.remove
+		 * @return {Form}
 		 */
-		select2: function(selector, settings) {
+		select: function(selector, settings) {
 			var 
 			self = this, 
             options = this.options, 
@@ -216,11 +228,11 @@ define(function(require, exports) {
 			$element, $this, $combox, $optionlist, $input, $btmli,
 			htmllist, method, args, 
 			implementing = {'add': add, 'remove': remove, 'focus': focus, 'blur': blur}, 
-			selectedText, dim, pos, 
+			selectedText, dim, pos, css,
 			select, l = $select.size(), 
 			delimiter = ', ';
 			
-			// 方法
+			// Method
 			if ($.type(settings) === 'string') {
 				if (!(settings in implementing)) {
 					return $.error('Method ' + settings + ' is not supported');
@@ -239,7 +251,7 @@ define(function(require, exports) {
 
 				settings = $.extend({}, {
 					// attributes(html5 && html4)
-					// form(html5 attribute)(非设置项)
+					// form(html5 attribute)(Non-Option)
 					autofocus: $this.attr('autofocus'), 
 					data: select.options.length ? select.options : $this.attr('data'), 		
 					disabled: select.disabled, 
@@ -249,41 +261,35 @@ define(function(require, exports) {
 				}, {
 					combox: false, 
 					tabIndex: 1, 
-					maxSize: 20, // chrome: 20, ie: 30	
-					place: $.noop
+					maxSize: 20 // chrome: 20, ie: 30	
 				}, settings);
 				
 				if (!settings.size) settings.size = settings.maxSize;
 				settings.size = Math.min(settings.size, settings.maxSize);
-				// 错误按服务对象分两种: 面向用户, 面向程序猿
+				// There have two error types order by service targets corresponds to user and developer respectively
 				if (!settings.size) {
 					throw 'Size cannot be zero.';
 				}
 				
-				if ($this.attr('enhanced') && !method) {
+				if ($this.attr('vui-enhanced') && !method) {
 					$this.parent().after($this).remove();
-					$this.removeAttr('enhanced');
+					$this.removeAttr('vui-enhanced');
 				}
 				
-				if (!$this.attr('enhanced')) {
-					// 新创建的select
-					$element = $('<div tabindex="' + settings.tabIndex + '" class="' + clsslt + ' ' + style.select + '"/>');
-					if (!$.contains(self.element[0], $this[0])) {
-						$element.append($this.hide()).css({'position': 'absolute'});
-						settings.place.call($element, self.element);
-					} else {
-						// An element is said to be positioned if it has a CSS position attribute of relative, absolute, or fixed.
-						pos = $this.css('position');
-						$element
-							.css({'position': (!~('relative, absolute, fixed'.indexOf(pos)) ? 'relative' : pos)})
-							.insertAfter($this)
-							.append($this.hide());
-					}
-					
+				if (!$this.attr('vui-enhanced')) {
+					// Get the raw select's layout info
+					css = $this.css(['display', 'float', 'top', 'left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left']);
 
+					// New created select
+					$element = $('<div tabindex="' + settings.tabIndex + '" class="' + clsslt + ' ' + style.select + '"/>');
+
+					$element
+						.insertAfter($this)
+						.append($this.hide());
+					
 					$combox = $('<div style="position:relative;" class="' + clscbx + '"/>');
 					$input = $('<input style="position:absolute;left:0;top:0;" type="text" class="' + style.selectInput + ' ' + clsipt + '" ' + (settings.combox ? '' : 'readonly ') + '/>').appendTo($combox);
-					// tabindex小于0可使元素获得焦点事件而不受Tab键导航 
+					// Set tabindex to value less than zero will make the element focusable but escape from TAB navigation
 					$arrow = $('<a tabindex="-1" style="position:absolute;top:0;right:0;" href="javascript:;" class="' + clsarw + ' ' + style.selectArrow + '"/>').appendTo($combox);
 					$element.append($combox);
 					
@@ -292,7 +298,7 @@ define(function(require, exports) {
 						$.ajax({
 							url: settings.data
 						}).done(function(data) {
-							// 考虑两种场景: 1. select不支持data attribute; 2. 设置settings.data覆盖select.options
+							// Two scenes: 1. select don't data attribute; 2. Set settings.data to override select.options
 							$.each(data, function() {
 								select.add($('<option />').text(option.text).val(option.value).get(0), this.options[index]);
 							});
@@ -308,30 +314,48 @@ define(function(require, exports) {
 					});
 					$input.val(selectedText.join(delimiter));
 									
-					// 获取原生控件尺寸, 位置
-					// .css与.width已兼容, 唯一的区别是前者返回值带单位(字符类型)
+					
 					dim = {width: $this.outerWidth(), height: $this.outerHeight()};
-					pos = {left: $this.css('left'), top: $this.css('top')};
-					(pos.left === 'auto') && (pos.left = 0);
-					(pos.top === 'auto') && (pos.top = 0);
-					$element.css(pos);
-					$element.contentWidth(dim.width);
-					$combox.contentHeight(dim.height);
-					$arrow
-						.contentHeight(dim.height)
-						.contentWidth(17);
-					$input
-						.contentWidth(dim.width - $arrow.outerWidth(true))
-						.contentHeight(dim.height);       
+					css.width = $element.dimWidth(dim.width);
+					css.height = $element.dimHeight(dim.height);
+					$element.css(css);
+					
+					pos = $this.css('position');					
+					$element.css({'position': (!~('relative, absolute, fixed'.indexOf(pos)) ? 'relative' : pos)})					
+					$element.css('line-height', $element.height() + 'px');
+					// $combox relative to $element
+					// Since $combox is relative, use $element's content height
+					$combox.css('height', $combox.dimHeight($element.height()));
+					// $arrow relative to $combox 
+					// Since $arrow is absolute, use $combox's visual height
+					//$arrow.css({height: css.height, width: 17});					
+					$arrow.css({height: $arrow.dimHeight($combox.outerHeight())});
+					// $input is same as $arrow
+					// NB: input element's box-sizing behaviour is border-box like
+					$input.css({
+						width: $input.dimWidth(
+							$combox.outerWidth() 
+							- $arrow.outerWidth(true) 
+							- parseInt($input.css('paddingLeft'))
+							- parseInt($input.css('paddingRight'))
+						),
+						height: $input.dimHeight(
+							$combox.outerHeight() 
+							- parseInt($input.css('paddingTop'))
+							- parseInt($input.css('paddingBottom'))
+						)
+					});
+						
 					$element.append($optionlist.append(htmllist));
 					$btmli = $optionlist.find('li:nth-child(' + Math.min(settings.data.length, settings.size) + ')');
 					$optionlist
-						.contentWidth(dim.width)
-						.height($btmli.position().top - parseInt($optionlist.css('padding-top')) + $btmli.outerHeight())
+						.css('width', $optionlist.dimWidth(dim.width))
+						// An element is said to be positioned if it has a CSS position attribute of relative, absolute, or fixed.						
+						.css('height', $btmli.position().top + $btmli.outerHeight(true) + 'px')
 						.hide();
 					
 					if (settings.disabled) {
-						// IE8以下不支持bottom, right属性
+						// <IE8 don't support bottom and right position
 						$mask = $('<div style="position:absolute;left:0;top:0;width:100%;height:100%;"/>').appendTo($element);
 					}
 					
@@ -344,7 +368,7 @@ define(function(require, exports) {
 						.attr('disabled', settings.disabled)
 						.attr('multiple', settings.multiple)
 						.attr('size', settings.size);					
-					$this.addAttr('enhanced', 'enhanced');
+					$this.addAttr('vui-enhanced', 'vui-enhanced');
 				} else {
 					$element = $this.parent();
 					$combox = $element.find('.' + clscbx);
@@ -356,12 +380,12 @@ define(function(require, exports) {
 					implementing[method].apply(select, args);
 				}
 				
-				// 方法
+				// Method
 				function _createOption(option) {
 					if ($.type(option) !== 'object') return '';
 					return '<li class="' + (option.selected ? style.selectOptionSelected : '') + ' ' + style.selectOption + ' ' + clsopt + '" value="' + option.value + '"><a href="javascript:return false;">' + (settings.multiple ? ('<label><input type="checkbox" />' + option.text + '</label>') : option.text) + '</a></li>';			
 				}
-				// 添加一个选项, 索引从0计数, 支持负数
+				// Add an option, index from zero, compatible with negative
 				function add(option, index) {
 					if (!this.options.length) option.selected = true;
 					var len = this.options.length || 0, selectedText = [], selectedIndex;
@@ -386,12 +410,11 @@ define(function(require, exports) {
 						});
 						$input.val(selectedText.join(delimiter));	
 					}						
-					// 与组件实例无关联且作为API开放的事件, 不建议加上组件事件命名空间
 					$element.trigger('option.add', settings);
 					// $(this).trigger('option.add' + self.eventNamespace, settings);
 				}
-				// 删除一个选项
-				// selectObject.remove(index): 如果指定的下标比0小, 或者大于或等于选项的数目, remove()方法会忽略它并什么也不做
+				// Delete an option
+				// selectObject.remove(index): if the specified index less than zero or greater than or equiv to the options's length, invoke remove will do nothing
 				function remove(index) {
 					if (!this.options.length) return;
 					var len = this.options.length - 1, option, selectedText = [];
@@ -425,9 +448,9 @@ define(function(require, exports) {
 				function focus() {
 					$element.addClass(style.selectFocus);
 					// To run an hidden element's focus event handlers: 
-					// 1.$(this).focus() vs. 2.$(this).trigger('focus') vs. 2.$(this).triggerHandler('focus')
-					// IE6支持1, 2, 3; 其他支持3
-					// focus事件在各浏览器下均不冒泡, 委托focusin进行冒泡
+					// 1.$(this).focus() vs. 2.$(this).trigger('focus') vs. 3.$(this).triggerHandler('focus')
+					// IE6 support 1, 2, 3; others support 3
+					// focus event don't bubble in all browsers, delegate focusin event to complete this 
 					$(this).triggerHandler('focus');
 				}
 				// blur
@@ -439,15 +462,16 @@ define(function(require, exports) {
 			}	
 		}, 
 		// Supported types: date datetime datetime-local month range time week
-		input2: function(selector, settings) {}, 
-		// 单选按钮
-		radio2: function(selector, settings) {}	
+		input: function(selector, settings) {}, 
+		// Radio
+		radio: function(selector, settings) {}, 
+			
 	});
 	
-	// 子插件
-	$.map(['checkbox2', 'radio2', 'select2', 'input2'], function(method) {
+	// Descendable $.fn
+	$.map(['checkbox', 'radio', 'select', 'input'], function(method) {
 		$.fn[method] = function() {
-			var args = [].slice.apply(arguments), context = $(this[0].form).data('hijax-form2');
+			var args = [].slice.apply(arguments), context = $(this[0].form).data('vui-form');
 			context[method].apply(context, [].concat(this, args));
 			return this;
 		}

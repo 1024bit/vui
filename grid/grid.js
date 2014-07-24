@@ -25,7 +25,7 @@
  使用方法: 
  * $('xxx').grid(options)
  依赖组件:
- * form2, pagination, validator
+ * form2, page, validator
  事件:
  * gridinit gridload gridleave
  */
@@ -180,7 +180,7 @@
 			evtmap['change input.' + clspageno] = function(e) {
 				var pageno = e.target.value;
 				if ((pageno <= this.pages) && (pageno > 0)) {
-					this.pagination.select(+(e.target.value), e);
+					this.page.select(+(e.target.value), e);
 				}
 			}; 			
 			// 保存更改
@@ -237,7 +237,7 @@
 				}
 			});
 		}, 
-		_paint: function(models) {
+		_draw: function(models) {
 			var 
 			self = this, 
             options = this.options, 
@@ -310,16 +310,16 @@
 			this.load(options.startPage - 1).done(function() {
 				self.element.find('.' + clspageno).parent().toggle((self.total !== 0));
 
-				if (self.pagination) {
+				if (self.page) {
 					// 更新分页组件
-					self.pagination.option({total: self.total}).update();
+					self.page.option({total: self.total}).update();
 				} else {
-					self.pagination = self.element.find('.' + clspgn).pagination({
+					self.page = self.element.find('.' + clspgn).page({
 						pageSize: options.pageSize, 
 						count: options.count, 
 						total: self.total, 
 						startPage: options.startPage
-					}).data(self.namespace + '-pagination');
+					}).data(self.namespace + '-page');
 				}
 				self._trigger('init');
 			});			
@@ -459,8 +459,8 @@
 		// 重载
 		reload: function(e) {
 			this.tbodys = [];
-			this.pagination.page = 0;
-			this.pagination.select(this.page || this.options.startPage, e);
+			this.page.page = 0;
+			this.page.select(this.page || this.options.startPage, e);
 		}, 
 		// 更新
 		update: function() {	

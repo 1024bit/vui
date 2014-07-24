@@ -1,95 +1,139 @@
 /** 
- * 倒计时组件
+ *  VUI's `countdown` class
+ *  
+ *  Usage: 
+ * 	$(selector).countdown(options)
+ *  
+ *  Event:
+ *  countdownstart(Global Event), coundownover, countdownstop(Global Event)
  *
- * 使用方法: 
- * $('xxx').countdown(options)
- *
- * 事件:
- * countdownstart(Global Event), coundownover, countdownstop(Global Event)
+ *  Copyright(c) 2014 vip.com
+ *  Copyright(c) 2014 Cherish Peng<cherish.peng@vip.com>
+ *  MIT Licensed 
  */
-(function($) {
-	$.widget('hijax.countdown', $.hijax.widget, {
+define(function(require, exports) {
+	var 
+	$ = require('jquery'), 
+	LANG = require('./i18n/{lang}');
+	require('jquery.ui.widget');
+	require('../vui.widget');
+	
+	$.widget('vui.countdown', $.vui.widget, {
 		options: {
-			date: null, 
-			// 是否显示天
+			prefix: 'count', 
+			// Reference date, is a timestamp
+			refererDate: null, 
+			// HTML attr name where the target date is stored to
+			attrName: 'data-countdown', 
+			// Show day or not
 			showDay: true,
 			// 0 -> 00
 			leadingZero: false,
-			// 默认自动开始倒计时
-			autoStart: true, 
+			// For customizing show format
 			show: null, 
+			// Default interval(ms)
+			interval: 1000
 		},  
-		_createWidget: function(options, element) {
-			this._super(options, element);
-			var cls = this.constructor, uuid = this.widgetFullName + '-' + this.uuid;
-			this.getCountdown();
+		widgetEventPrefix: 'count',
+		_create: function() {
+			this._super.apply(this, arguments);
 			
-			if (options.autoStart) {
-				cls.timerInstance[uuid] = this;
-				if (!cls.timer) {
-					this._trigger('start');
-					cls.timer = setInterval(function() {
-						$.each(cls.timerInstance, function() {
-							this.getCountdown();
-						});
-					}, 100);
-				}
-			}
+			// Initialize
+			this._uuid = this.widgetName + '-' + this.uuid;
+			this.run();
 		}, 
-		getCountdown: function() {
+		run: function() {
 			var 
 			options = this.options, 
-			cls = this.constructor, uuid = this.widgetFullName + '-' + this.uuid, 
-			result = [], dt, d, h, m, s;
+			cls = this.constructor;		
 			
-			// 参考时间为当前时区的时间
-			dt = new Date(options.date + (new Date().getTimezoneOffset() * 60 * 1000));
-			if (options.showDay) {
-				d = parseInt(dt / (24 * 3600 * 1000), 10) + '';
-				if (d.length === 1) d = '0' + d;
-				result.push(d);
-			}
+			if (!cls.instance[options.interval]) 
+				cls.instance[options.interval] = {};
+			cls.instance[options.interval][this._uuid] = this;
 			
-			if (!d && !h && !m && !s) {
-				delete cls.timerInstance[uuid];
-				this._trigger('over');
-				if ($.isEmptyObject(cls.timerInstance)) {
-					clearInterval(cls.timer);
-					cls.timer = 0;
-					this._trigger('stop');
-				}
-			}
-			
-			h = dt.getHours() + '';
-			m = dt.getMinutes() + '';
-			s = dt.getSeconds() + '';
-
-			if (options.leadingZero) {
-				if (h.length === 1) h = '0' + h;
-				if (m.length === 1) m = '0' + m;
-				if (s.length === 1) s = '0' + s;
-			}
-			result.concat([h, m, s]);
-			this.show(result);
-		}, 
-		show: function(countdown) {
-			var options = this.options;
-			if ($.isFunction(options.show)) {
-				options.show.apply(this, arguments);
-			}
-			this._show(countdown);
-		}, 
-		_show: function(countdown) {
-			this.element.html(countdown.join(':'));
-		}, 
-		destroy: function() {
-			this._super();
-			delete this.constructor.timerInstance[this.widgetFullName + '-' + this.uuid];
+			if (!cls.timer[options.interval]) {
+				this._trigger('start');
+				cls.timer[options.interval] = setInterval(function() {
+					$.each(cls.instance[options.interval], function() {
+						var timestamp = this.element.attr(this.options.attrName) - this.options.refererDate;
+						if (!timestamp) {
+							delete cls.instance[options.interval][this._uuid];
+							this._trigger('over');
+							if ($.isEmptyObject(cls.instance[options.interval])) {
+								clearInterval(cls.timer[options.interval]);
+								cls.timer[options.interval] = undefined;
+								this._trigger('stop');
+							}
+						}						
+						this.element.html(this.show(this.getDate(timestamp)));
+					});
+				}, options.interval);
+			}		
 		}
-		
+		/**
+		 *  Get a timestamp's components
+		 *  
+		 *  function getDate(timestamp) {
+		 *      var 
+		 *       date = new Date(timestamp * 1000), // From the date of January 1, 1970
+		 *       day = parseInt(timestamp / (24 * 3600)), 
+		 *       hour = date.getHours(), 
+		 *       minute = date.getMinutes(), 
+		 *       second = date.getSeconds(), 
+		 *       timezoneoffset = new Date().getTimezoneOffset() / 60;
+		 *       
+		 *       hour = hour + timezoneoffset;
+		 *       if (hour < 0) hour += 24;
+		 *
+		 *       return {
+		 *           day: day, 
+		 *           hour: hour, 
+		 *           minute: minute, 
+		 *           second: second
+		 *       };
+		 *   }
+		 *  
+		 *  @param {Int} timestamp - in seconds
+		 *  @return {Object} - {day: 12, hour: 12, minute: 12, second: 12}
+		 */		
+		getDate: function(timestamp) { 
+			var 
+			options = this.options, 
+			clock = {
+				day: 24 * 3600, 
+				hour: 3600, 
+				minute: 60, 
+				second: 1
+			}, 
+			unit, size;
+			
+			for (unit in clock) {
+				size = clock[unit];
+				clock[unit] = parseInt(timestamp / size);
+				if (clock[unit] <= 9 && options.leadingZero) clock[unit] = '0' + clock[unit]; // leading zero
+				timestamp -= clock[unit] * size;
+			}
+			//clock.day *= 1; // Ignore leading zero for day
+			if (!options.showDay) delete clock.day;
+			return clock;
+		}, 
+		show: function(clock) {
+			var options = this.options;
+			return $.isFunction(options.show) ? 
+				options.show.call(this, clock) : 
+				this._show(clock);
+		}, 
+		_show: function(clock) {
+			var time = '';
+			time += clock.day + LANG.DAY;
+			time += clock.hour + LANG.HOUR;
+			time += clock.minute + LANG.MINUTE;
+			time += clock.second + LAGN.SECONDS;
+			return time;		
+		}
 	});
-	// 定时器
-	$.hijax.countdown.timer = 0;
-	// 开启定时器的实例
-	$.hijax.countdown.timerInstance = {};
-})(jQuery);
+	// Timer
+	$.vui.countdown.timer = {};
+	// Instances
+	$.vui.countdown.instance = {};
+});

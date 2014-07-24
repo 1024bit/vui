@@ -148,7 +148,7 @@
 			
 			this._super();
 		}, 		
-		_paint: function(models) {
+		_draw: function(models) {
 			var 
 			self = this, 
 			options = this.options, 

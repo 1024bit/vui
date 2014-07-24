@@ -1,38 +1,53 @@
 /** 
- * popover: 集dialog, tooltip功能于一身
+ *  VUI's `popover` class
+ * 
+ *  Usage: 
+ *  $(selector).popover(options)
+ *  
+ *  Event:
+ *  popready, popclose
  *
- * 使用方法: 
- * 1. $('xxform').popover({options})
- *
- * 事件: popready, popclose, popcancel, popok
+ *  Copyright(c) 2014 vip.com
+ *  Copyright(c) 2014 Cherish Peng<cherish.peng@vip.com>
+ *  MIT Licensed 
  */
+define(function(require, exports) {
+	var 
+	$ = require('jquery'), 
+	util = require('../vui.util');
+	require('jquery.ui.widget');
+	require('../vui.widget');
 
-(function($) {
-	$.widget('hijax.popover', $.hijax.widget, {
+	$.widget('vui.popover', $.vui.widget, {
 		options: {
 			event: 'click', //  click | hover | focus | manual
 			themes: {
 				'default': {
 					style: {
 						popOver: '',
-						popArrow: '', 
 						popTitle: '', 
 						popContent: '', 
 						popTop: '',
 						popLeft: '',
 						popBottom: '',
-						popRight: ''
+						popRight: '', 
+						popArrow: '', 
+						popTopArrow: '',
+						popLeftArrow: '',
+						popBottomArrow: '',
+						popRightArrow: '',						
+						popClose: ''
 					}
 				}
 			}, 	
 			placement: 'right', 
 			title: '', 
 			content: '', 
-			// 延迟消失
+			// Delay disappear, ms
 			delay: 0, 
-			// 可手动关闭
+			// Can close manully
 			closable: false,
-			// 标识popover类型, 值由第三方提供
+			// Popover type, value is provided by the third party
 			type: ''
 			
 		},  
@@ -40,19 +55,18 @@
 		_attachEvent: function() {
 			var self = this, 
 				options = this.options, 	
-				clspfx = this.namespace + '-' + options.prefix, 
-				clsclose = clspfx + '-close', 
+				clsclose = this.options.classPrefix + '-close', 
 				evtmap = {}, popevtmap = {};
-			// 考虑以下几种情况: 1. 窗体大小可变, 2. 响应式布局(含流体布局)元素的大小可变 
-			// 因而, 获取元素的position定位要比offset定位靠谱
+			// Consider those:
+			// 1. Window's size is changeable
+			// 2. In Responsive Layout or Flow Layout, the element's size is changeable
+			// So, the Position-Location is more stable than Ofsset-Location
 			evtmap[options.event] = function(e) {
 				this.show();
 			};
 			
 			popevtmap['click .' + clsclose] = function(e) {
-				var evt = $.Event('close');
-				this._trigger(evt);
-				if (!evt.isDefaultPrevented()) {
+				if (this._trigger('close')) {
 					this.hide();
 				}
 			}
@@ -70,43 +84,42 @@
 			this._on(evtmap);
 			this._on(this.$popover, popevtmap);
 		}, 
-		_paint: function(models) {
+		_draw: function(models) {
 			var 
 			options = this.options, 
 			style = options.themes[options.theme].style, 
-			clspfx = this.namespace + '-' + options.prefix, 
+			clspfx = this.options.classPrefix,
 			clsover = clspfx + '-over',
 			clsarrow = clspfx + '-arrow', 
 			clstitle = clspfx + '-title', 
 			clscontent = clspfx + '-content', 
 			clsclose = clspfx + '-close', 
-			html = '<div class="' + clsover + ' ' + style.popOver + ' ' + options.type + ' ' + style['pop' + ucfirst(options.placement)] + '">' 
-			+ '<div class="' + clsarrow + ' ' + style.popArrow + '"></div>' 
-			+ (options.clstitle ? '<h3 class="' + clstitle + ' ' + style.popTitle + '">' + options.title + '</h3>' : '') 
+			html = '<div class="' + clsover + ' ' + style.popOver + ' ' + options.type + ' ' + style['pop' + util.capitalize(options.placement)] + '">' 
+			+ '<div class="' + clsarrow + ' ' + style.popArrow + ' ' + style['pop' + util.capitalize(options.placement) + 'Arrow'] + '"></div>' 
+			+ (options.title ? '<h3 class="' + clstitle + ' ' + style.popTitle + '">' + options.title + '</h3>' : '') 
 			+ '<div class="' + clscontent + ' ' + style.popContent + '">' + options.content + '</div>'
 			+ (options.closable ? '<button type="button" class="' + clsclose + ' ' + style.popClose + '" aria-hidden="true">&times;</button>' : '') 
 			+ '</div>';
 			this.$popover = $(html).css({'position': 'absolute'}).hide().appendTo(this.element.parent());
 		}, 
 		show: function() {
-			// 适用于不可见的自由宽高元素
+			// For hidden, free-size element
 			this.$popover.show();
 			var 
 			options = this.options, 	
-			clspfx = this.namespace + '-' + options.prefix, 
-			clsarrow = clspfx + '-arrow', 				
+			clsarrow = this.options.classPrefix + '-arrow', 				
 			$arrow = this.$popover.find('.' + clsarrow), 
 			
 			arwsz = {w: $arrow.outerWidth(), h: $arrow.outerHeight()}, 
 			docsz = {w: this.document.width(), h: this.document.height()}, 
 			tgtsz = {w: this.element.outerWidth(), h: this.element.outerHeight()}, 
+			popsz = {w: this.$popover.outerWidth(), h: this.$popover.outerHeight()}, 
 			arwofs = $arrow.position(), 
 			docofs = {top: this.document.scrollTop(), left: this.document.scrollLeft()}, 		
 			tgtofs = this.element.position(), 
-			popsz = {w: this.$popover.outerWidth(), h: this.$popover.outerHeight()}, 
-			popofs, 
+			
 			margin = {top: $arrow.outerHeight(true) - arwsz.h, left: $arrow.outerWidth(true) - arwsz.w}, 
-			top, left, bottom, right;
+			top, left, bottom, right, dist, popofs;
 			
 			switch (options.placement) {
 				case 'top': 
@@ -126,11 +139,11 @@
 					popofs = {left: left ? (tgtofs.left - popsz.w) : (tgtofs.left + tgtsz.w), top: top - dist};
 					break;
 			}
-			// 超出视窗
-			// top && (popofs.top < docofs.top) && (popofs.top = tgtofs.top + tgtsz.h);
-			// left && (popofs.left < docofs.left) && (popofs.left = tgtofs.left + $tgtsz.w);
-			// right && (popofs.left + popsz.w > docofs.left + docsz.w) && (popofs.left = tgtofs.left - popsz.w);
-			// bottom && (popofs.top + popsz.h > docofs.top + docsz.h) && (popofs.top = tgtofs.top - popsz.h);
+			// Out of viewport
+			//top && (popofs.top < docofs.top) && (popofs.top = tgtofs.top + tgtsz.h);
+			//left && (popofs.left < docofs.left) && (popofs.left = tgtofs.left + $tgtsz.w);
+			//right && (popofs.left + popsz.w > docofs.left + docsz.w) && (popofs.left = tgtofs.left - popsz.w);
+			//bottom && (popofs.top + popsz.h > docofs.top + docsz.h) && (popofs.top = tgtofs.top - popsz.h);
 			this.$popover.css(popofs);
 			options.delay && (this.timer = this._delay('hide', options.delay));
 			return this;
@@ -149,7 +162,7 @@
 		update: function(options) {
 			var 
 			style = this.options.themes[this.options.theme].style, 
-			clspfx = this.namespace + '-' + this.options.prefix, 
+			clspfx = this.options.classPrefix, 
 			clstitle = clspfx + '-title', 
 			clscontent = clspfx + '-content'; 
 			
@@ -159,11 +172,4 @@
 			return this;
 		}
 	});
-	
-	// 将字符串的首字母转换为大写
-	function ucfirst(str) {
-		return (!$.util || !$.util.ucfirst) ? 
-			str.replace(/^([a-z])/i, function (m) { return m.toUpperCase(); }) : 
-			$.util.ucfirst(str);
-	};	
-})(jQuery);
+});

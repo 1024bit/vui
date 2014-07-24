@@ -7,14 +7,17 @@
  *  Copyright(c) 2014 Cherish Peng<cherish.peng@vipshop.com>
  *  MIT Licensed
  */
-define("vui.widget", function(require, exports) {
+define(function(require, exports) {
 	var 
-	$ = require('jquery');
+	$ = require('jquery'), 
+	util = require('./vui.util');
 	require('jquery.ui.widget');
+	require('jquery.fn.attr');
+	require('jquery.fn.metadata');
 	
-	$.widget('VUI.Widget', {
+	$.widget('vui.widget', {
 		options: {
-			// Scene? just for the literial call: VUI.WidgetName(options)?
+			// Scene? just for the literial call: vui.widgetName(options)?
 			element: null, 
 			models: [], 
 			themes: {
@@ -27,6 +30,10 @@ define("vui.widget", function(require, exports) {
 				}
 			},             
 			theme: 'default', 
+			// SEO, assume the widget's dom is ready
+			seo: false, 
+			prefix: '',
+			classPrefix: '', 
 			// Context for a[href], button[href] value func
 			context: null, 
 			message: {
@@ -37,7 +44,7 @@ define("vui.widget", function(require, exports) {
 		_createWidget: function(options, element) {
 			var 
 			self = this, 
-			constructor = $[this.namespace][this.widgetName], 
+			constructor = this.constructor, 
 			duckType;
 			
 			// Deep copy the prop from prototype chain which's type is one of object or array
@@ -66,6 +73,9 @@ define("vui.widget", function(require, exports) {
 			// Default value
 			if (!this.options.prefix) 
 				this.options.prefix = this.widgetName;
+			
+			if (!this.options.classPrefix) 
+				this.options.classPrefix = this.namespace + '-' + this.options.prefix 
 
 			this.element = $(element);
 			this.element.addAttr('widget', this.widgetFullName);
@@ -112,11 +122,10 @@ define("vui.widget", function(require, exports) {
 					
 					function _leave() {
 						var evt = $.Event(e);
-						evt.type = 'leave';
 						evt.target = e.target;
+						evt.type = 'leave';
 						// The third party can intercept default-behavior in the leave event
-						self._trigger(evt, id);
-						return !evt.isDefaultPrevented();					
+						return self._trigger(evt, id);
 					}
 				}
 			});			
@@ -136,15 +145,14 @@ define("vui.widget", function(require, exports) {
 				$elem = $(this);
 				widgetNames = $elem.attr('widget').split(' ');
 				$.map(widgetNames, function(widgetName) {
-					if (!$elem.data(self.namespace + '-' + widgetName)) {
-						$elem[widgetName]();
+					if (!$elem.data(widgetName)) {
+						$elem[widgetName.replace(self.namespace + '-', '')]();
 					}
 				});
-				
 			});
 		},
-		// Paint widget
-		_paint: function(models) {}, 
+		// Draw widget
+		_draw: function(models) {}, 
 		// Render widget
 		_render: function() {
 			var 
@@ -154,7 +162,7 @@ define("vui.widget", function(require, exports) {
 			namespace = this.namespace, 
 			ns, widgetName, evtobj;
 			
-			this._paint(options.models);
+			if (!options.seo) this._draw(options.models);
 
 			// Register widget, add parent, widgets, id props
 			var $parent = this.element.parent().closest(expr);
@@ -198,48 +206,9 @@ define("vui.widget", function(require, exports) {
 		}, 
 		// Update widget
 		update: function(models) {
-			if (!models) {
-				this.raise(options.message.noUpdate, 'notice');
-				return;
-			}
 			this.options.models = models;
-			this._render();
-		}, 
-		// By default add event prefix
-		_trigger: function(event, data, addPrefix) {
-			var prop, orig, callback, type, namespaces;
-
-			if ('string' === $.type(event)) {
-				namespaces = event.split('.');
-				event = namespaces.shift();
-			}
-			// Ensure the event is a new instance
-			event = $.Event(event, {namespace: namespaces.join('.')});
-			data = [].concat(data);
-			addPrefix = (addPrefix !== undefined) ? addPrefix : true;
-			type = event.type;
-			callback = this[type];
-			orig = event.originalEvent;
-			
-			if (orig) {
-				// You may not want to append namespace to the event which export to the external
-				orig.namespace = "";
-				for (prop in orig) {
-					if (!(prop in event)) {
-						event[prop] = orig[prop];
-					}
-				}
-			}
-			type = (!type.indexOf(this.eventPrefix) ? type : (!addPrefix ? type : this.eventPrefix 
-				+ type)).toLowerCase();
-			event.type = type;
-			
-			if (!event.target) event.target = this.element[0];
-			this.element.trigger(event, data);
-			
-			return !($.isFunction(callback) &&
-				callback.apply(this, [event].concat(data)) === false ||
-				event.isDefaultPrevented());
+			this.destroy();
+			$.data(this.element.get(0), this.widgetFullName, this.constructor(this.options, this.element));
 		}, 
 		// Set the context to this.element
 		$: function(selector, context) {
@@ -248,7 +217,7 @@ define("vui.widget", function(require, exports) {
 		// Don't support `this.bindings`, use this._on stead
 		on: function(suppressDisabledCheck, types, selector, data, handler) {
 			var 
-			instance = this, events = types, 
+			instance = this, events, 
 			delegateElement = this.widget() || this;
 			
 			if (typeof suppressDisabledCheck !== 'boolean') {
@@ -258,7 +227,8 @@ define("vui.widget", function(require, exports) {
 				types = suppressDisabledCheck;
 				suppressDisabledCheck = false;
 			}
-			
+			events = types;
+
 			if (data == null && handler == null) { 
 				// (types, handler)
 				handler = selector;
@@ -311,14 +281,70 @@ define("vui.widget", function(require, exports) {
 			
 			return this;
 		}, 	
+		// By default add event prefix
+		_trigger: function (type, event, data, addPrefix) {
+			var self = this, prop, orig, callback, callbackResult, namespaces;
+			// Compatible with `this._super`
+			if ('string' === $.type(type) && (event instanceof $.Event)) {
+				// (type, event, data, addPrefix)
+				event.type = type;
+			} else if (type instanceof $.Event) {
+				// (event, data, addPrefix)
+				addPrefix = data;
+				data = event;
+				event = type;
+				type = undefined;
+			} else {
+				// (type, data, addPrefix) 
+				addPrefix = data;
+				data = event;
+				namespaces = type.split('.');
+				type = namespaces.shift();
+				event = {type: type};
+				namespaces = namespaces.join('.');
+			}
+			// Ensure the event is a new instance
+			event = $.Event(event);
+			if (namespaces) event.namespace = namespaces;
+
+			data = [].concat(data);
+			addPrefix = (addPrefix !== undefined) ? addPrefix : true;
+			type = event.type;
+			callback = this.options[type];
+			orig = event.originalEvent;
+			
+			if (orig) {
+				// You may not want to append namespace to the event which export to the external
+				orig.namespace = "";
+				for (prop in orig) {
+					if (!(prop in event)) {
+						event[prop] = orig[prop];
+					}
+				}
+			}
+			type = (!type.indexOf(this.widgetEventPrefix) ? type : (!addPrefix ? type : this.widgetEventPrefix + type)).toLowerCase();
+			event.type = type;
+			
+			if (!event.target) event.target = this.element[0];
+			this.element.trigger(event, data);
+			
+			if ($.isFunction(callback)) 
+				callbackResult = callback.apply(this, [event].concat(data));
+			$.when(event.result, callbackResult).always(function(d1, d2) {
+				self._getResult(d1, d2);
+			});
+			return !(callbackResult === false || event.isDefaultPrevented());
+		}, 	
+		// Get results of `options.callback` and `this._trigger` 
+		_getResult: function() {}, 
 		// N.B. $.fn.remove will remove all events and datas from the target
 		destroy: function(keepData) {
 			this._super.call(this);
 			// Trigger widget's remove event
-			this._trigger($.Event('remove'), this);
+			this._trigger('remove', this);
 			// Remove attrs associate with widget
 			//this.element.removeAttr('data-' + this.widgetName);
-			this.element.removeAttr('widget', this.widgetName);
+			this.element.removeAttr('widget', this.widgetFullName);
 			// Destroy sub widget
 			$.each(this.widgets, function() {
 				this.destroy();
@@ -331,7 +357,7 @@ define("vui.widget", function(require, exports) {
 		raise: function(message) {
 			var options = this.options, messages = [];
 			if ($.type(message.message) === 'number') {
-				$.each($.factorMod(message.messgae), function() {
+				$.each(util.getMod(message.message), function() {
 					messages.push({type: message.type, message: options.message[options.mod[this + '']]});
 				});
 			} else {
@@ -339,24 +365,17 @@ define("vui.widget", function(require, exports) {
 			}
 			// type: error, warning, notice
 			// Support multiple message
-			this._trigger({type: 'message'}, messages);
+			this._trigger('message', messages);
 		}	
 	}); 
 	
 	/** 
-	 *  $.VUI static props
+	 *  $.vui static props
 	 */
-	$.extend($.VUI, {
+	$.extend($.vui, {
 		// Setup widget's default options 
 		widgetSetup: function(widgetName, options) {
-			$.extend(true, $.VUI[widgetName].prototype.options, options);
+			$.extend(true, $.vui[widgetName].prototype.options, options);
 		} 
 	});
-	
-	// Keep name is lower case 
-	var _bridge = $.widget.bridge;
-	$.widget.bridge = function(name, object) {
-		name = name.toLowerCase();
-		return _bridge(name, object);
-	}
 });

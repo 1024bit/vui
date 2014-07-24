@@ -1,27 +1,40 @@
-/** 
- * 表单验证组件, 改编自: http://niceue.com/validator
- * 目的: 保持组件的风格统一(基于jQuery UI), 方便后续同事扩展与维护
- * Scene: 
- * 1. 验证组件不负责表单提交
- * 2. 灵活与性能是此消彼长的关系
- 
- * 讨论问题: 错误消息一次全部提示与逐一提示的优缺点
- *
- * 使用方法: 
- * 1. $('xxform').validator({
+/**
+ *  VUI's `validator` class
+ *  
+ *  Inspiration:
+ *  Validator is not responsible for form submit
+ *  Flexible and performance are some kind of paradox
+ *  
+ *  Discussion: 
+ *  What's the merits and faults of all or only one error message is shown at a time?
+ *  
+ *  Usage: 
+ *  Script >
+ *  $(selector).validator({
  * 		fields: {
- *			name1:  {
+ *			field:  {
  *				name: '', placeholder: '', okMsg: '', ignore: '', 
- *				rule: [[regexp, '请输入正确的信息'], 'match[lt, money]', 'length[6~16]', ['qq', ''], 'rule4'; ...]
+ *				rule: [[/regexp/, 'Please input correct message'], 'match[lt, money]', 'length[6~16]', ['qq', '']]
  *			}
  *		}
- * }); 
+ *  });
+ *  HTML attribute >
+ *  data-rule="{rule: [[/regexp/, 'Please input correct message'], 'match[lt, money]', 'length[6~16]', ['qq', '']]}"
+ *   
+ *  Event: validatesuccess, validateok, validateerror
  *
- * 事件:
- * validatesuccess, validateok, validateerror
+ *  Copyright(c) 2014 vip.com
+ *  Copyright(c) 2014 Cherish Peng<cherish.peng@vipshop.com>
+ *  MIT Licensed
  */
-(function($) {
-	$.widget('hijax.validator', $.hijax.widget, {
+define(function(require, exports) {
+	var 
+	$ = require('jquery'), 
+	LANG = require('./i18n/{lang}');
+	require('jquery.ui.widget');
+	require('../vui.widget');
+	
+	$.widget('VUI.Validator', $.VUI.Widget, {
 		options: {
 			themes: {
 				'default': {
@@ -35,7 +48,8 @@
 			rules: {}, 
 			fields: {}, 
 			pauseOnError: false, 
-			defaultErrorMsg: '{0}格式不正确', 
+			
+			defaultErrorMsg: LANG.DEFAULT_ERROR_MSG, 
 			defaultOkMsg: ' ✔', 
 			// 引导性提示消息默认以placeholder的形式显示
 			showTipsAsPlaceholer: true, 
@@ -60,7 +74,8 @@
 			"2_lt": /\~\w+\s*\,\s*true/
 		}, 
 		_createWidget: function(options, element) {
-			$.hijax.widget.prototype._createWidget.apply(this, arguments);
+			this._super.apply(this, arguments);
+			
 			if (!$.nodeName(element, 'form')) {
 				return $.error("Only can initialize on form element");
 			}
@@ -175,7 +190,7 @@
 			evtmap['submit'] = function(e) {
 				isDefaultPrevented = false;
 				var self = this, $elements = $(e.target.elements), 
-						$elem, metadata, rtr, evt;
+						$elem, metadata, rtr;
 				
 				$elements.not(':hidden').not(':disabled').each(function() {
 					$elem = $(this);
@@ -185,9 +200,7 @@
 				});
 				rtr = !isDefaultPrevented;
 				if (rtr === true) {
-					evt = $.Event('success');
-					this._trigger(evt);
-					if (evt.isDefaultPrevented()) {
+					if (!this._trigger('success')) {
 						return !rtr; 
 					}
 				}
@@ -201,11 +214,10 @@
 			this._on(true, evtmap);
 		}, 
 		_exec: function($elem) {
-			var self = this, 
-			    e = {target: $elem[0]}, 
+			var self = this,
 				metadata = $elem.metadata('rule'), 
 				rule, error, errortpl, 
-				args, rtr;
+				args, rtr, e;
 				
 			if (!metadata.parsed) self.parseRule($elem);
 			if (!metadata.rule) return;		
@@ -215,6 +227,7 @@
 			}
 			metadata.name = metadata.name || $elem.prev('label').text() || $elem.closest('label').text();
 			$.each(metadata.rule, function() {
+
 				rule = this;
 				switch ($.type(rule)) {
 					case 'array': 
@@ -241,7 +254,8 @@
 								break;
 						}	
 						if (error) {
-							self._trigger('error', e);
+							e = $.Event('error', {target: $elem[0]});
+							self._trigger(e);
 							self.showMsg(e, {type: 'error', msg: self.sprintf((errortpl || self.options.defaultErrorMsg), [].concat(metadata.name, args))});
 							return false;
 						}
@@ -255,7 +269,8 @@
 			} else {
 				// 标识验证通过
 				metadata.valid = true;
-				self._trigger('ok', e);
+				e = $.Event('ok', {target: $elem[0]});
+				self._trigger(e);
 				self.showMsg(e, {type: 'ok', msg: metadata.okMsg || self.options.defaultOkMsg});
 			}			
 		}, 
@@ -286,22 +301,20 @@
 		_showMsg: function(e, opts) {
 			var options = this.options, 
 				style = options.themes[options.theme].style, 
-				clspfx = this.namespace + '-' + options.prefix, 
 				clsmsg, 
 				$target = $(e.target), $next;
 							
 			if (opts.type === 'placeholder' && this.options.showTipsAsPlaceholer) return;
 
-			clsmsg = clspfx + '-' + opts.type + '-msg';
+			clsmsg = this.classPrefix + '-' + opts.type + '-msg';
 			$next = $target.next('.' + clsmsg);
 			($next.length) ? $next.html(opts.msg).show() : $target.after(($next = $('<span class="' + style[opts.type + 'Msg'] + ' ' + clsmsg + '">' + opts.msg + '</span>')));
 			return $next;
 		}, 
 		hideMsg: function() {}, 
-		_paint: function(models) {
+		_draw: function(models) {
 			var options = this.options, 
 				style = options.themes[options.theme].style, 
-				clspfx = this.namespace + '-' + options.prefix, 
 				$elements = $(this.element.get(0).elements), $this;
 				
 			if (this.options.showTipsAsPlaceholer) {
@@ -315,11 +328,11 @@
 			} else if (this.options.showTips) {
 				$elements.each(function() {
 					$this = $(this);
-					clsmsg = clspfx + '-placeholder';
+					clsmsg = this.classPrefix + '-placeholder';
 					$next = $this.next(clsmsg);
 					($next.length) ? $next.show() : $this.after('<span class="' + style.placeholder + ' ' + clsmsg + '">' + $this.metadata('rule').placeholder + '</span>');
 				});
 			}
 		}
 	});	
-})(jQuery);
+});

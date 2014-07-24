@@ -288,10 +288,10 @@ function MVar() {
 			// 数据初始化
 			if (ele.data.offset <= maximum) {
 				// 触发loaderinit事件
-				self.trigger('loaderinit', data);
+				self._trigger('loaderinit', data);
 			}
 			// 触发loaderload事件
-			self.trigger('loaderload', data);
+			self._trigger('loaderload', data);
 		};
 		
 		var offscreen = (settings.dir == 'ttb') ? $.abovethetop : $.leftofbegin, 
