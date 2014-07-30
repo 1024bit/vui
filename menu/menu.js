@@ -17,8 +17,8 @@
  *  Todo:
  *  Load menu data dynamically 
  *
- *  Copyright(c) 2014 vip.com
- *  Copyright(c) 2014 Cherish Peng<cherish.peng@vip.com>
+ *  Copyright(c) 2014 xxx.com
+ *  Copyright(c) 2014 Cherish Peng<cherish.peng@xxx.com>
  *  MIT Licensed 
  */
 define(function(require, exports) {
@@ -121,7 +121,7 @@ define(function(require, exports) {
 		},
 		// Select panel
 		// Consider the dynamic datasource, don't support the digit index
-		// select('#hello'), select(alias), select('http://www.vip.com'), select($('xxx'))
+		// select('#hello'), select(alias), select('http://www.xxx.com'), select($('xxx'))
 		select: function (href, level) {
 			level = level || 0;
 			var 
@@ -196,7 +196,7 @@ define(function(require, exports) {
 					hideiconcls = util.getOrLast(style.menuHideIcon, level),
 					withIcon = util.getOrLast(theme.withIcon, level);
 					
-					// <IE8, href="#" will return http://www.vip.com#
+					// <IE8, href="#" will return http://www.xxx.com#
 					hash = $this.attr('href');
 					index = hash.indexOf('#');
 					hash = hash.slice((index < 0) ? index + 1 : index);
