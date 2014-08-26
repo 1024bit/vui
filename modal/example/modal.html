@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Debug</title>
+		<link type="text/css" rel="stylesheet" href="http://global.vip.com/skin/frontend/vip/default/css/global.css" />
+		<link rel="stylesheet" type="text/css" href="http://global.vip.com/skin/frontend/vip/default/css/local.css" media="all" />
+		<script type="text/javascript" src="http://global.vip.com/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="http://global.vip.com/js/jquery/jquery.1.11.js"></script>
+		<style type="text/css">
+		body{background: #eee;}
+		.wrap{height: 500px;}
+		</style>
+	</head>
+	<body>
+		<div class="wrap" style="border-bottom: 1px solid #333; padding: 40px 0;">
+			<button class="btn">Show me!</button>
+		</div>
+		<script type="text/javascript">
+	
+			jNode.set({
+				alias: {
+					"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js", 
+					"jquery.fn.attr": "/js/lib/jq-plugins/jquery.fn.attr.js",
+					"jquery.fn.metadata": "/js/lib/jq-plugins/jquery.fn.metadata.js", 
+					"jquery.fn.dimension": "/js/lib/jq-plugins/jquery.fn.dimension.js", 
+					
+				}, 
+				vars: {
+					lang: "en"
+				}
+			});
+			jNode.require([
+				"/js/lib/vui/modal/modal",
+				"/js/lib/vui/button/button"
+			], function() {
+				$.vui.widgetSetup('button', {
+					themes: {
+						'default': {
+							style: {
+								button: 'btn-ajax', 
+								btnDisabled: 'btn-disabled', 
+								btnHover: '', 
+								btnActive: '', 
+								btnLoading: 'btn-loading'
+							}
+						},
+						'pink': {
+							style: {
+								button: 'button-ajax-pink', 
+								btnDisabled: 'btn-disabled', 
+								btnHover: '', 
+								btnActive: '', 
+								btnLoading: 'btn-loading'
+							}
+						},
+						'white': {
+							style: {
+								button: 'button-ajax-white', 
+								btnDisabled: 'btn-disabled', 
+								btnHover: '', 
+								btnActive: '', 
+								btnLoading: 'btn-loading'
+							}
+						}
+					}
+				});
+				$.vui.widgetSetup('modal', {
+					themes: {
+						'default': {
+							style: {
+								modal: 'vip-modal',
+								modalTitle: 'title',
+								modalContent: 'content',
+								modalBtns: 'actions',
+								// String or array
+								modalBtn: ['ok button-ajax-pink','cancel button-ajax-white'], 
+								modalMask: 'vip-modal-mask',
+								modalClose: 'modal-close icon-close-14'
+							}
+						}
+					}	
+				});
+				$('.wrap').confirm({
+					title: "<i class='icon-modal-notice'></i><em>Test!</em>",
+					// title: "<i class='icon-modal-success'></i><em>Test!</em>",
+					content: "hello world hello world hello world hello world hello world hello world hello world hello world", 
+					showMask: true, 					
+					ok: function() {
+						console.log('ok');
+						return false;
+					}
+				});
+				$('.ok').button({
+					theme:'pink',
+					click: function() {
+						return $.Deferred(function(deferred) {
+							setTimeout(function() {
+								deferred.resolve();
+							}, 5000);
+						});
+					}
+				});
+				$('.cancel').button({
+					theme:'white',
+					click: function() {
+						return $.Deferred(function(deferred) {
+							setTimeout(function() {
+								deferred.resolve();
+							}, 5000);
+						});
+					}
+				});
+			});
+		</script>  
+	</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Debug</title>
+		<link type="text/css" rel="stylesheet" href="/skin/frontend/vip/default/css/global.css" />
+		<link rel="stylesheet" type="text/css" href="/skin/frontend/vip/default/css/local.css" media="all" />
+		<script type="text/javascript" src="/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="/js/jquery/jquery.1.11.js"></script>
+	</head>
+	<body>
+		<div class="wrap" style="border-bottom: 1px solid #333; padding: 40px 0;">
+			<form class="form1">
+			  <div class="form-group">
+				<label for="exampleInputEmail1">电子邮件</label>
+				<input name="email" type="text" data-rule="{name: '电子', rule: ['required', 'hello'], placeholder: '输入电子邮件'}" novalidate="novalidate" class="form-control" id="exampleInputEmail1">
+			  </div>
+			  <div class="form-group">
+				<label for="exampleInputPassword1">密码1</label>
+				<input name="passwd1" data-rule="{rule: [['required', 'hello']], placeholder: '输入密码'}" type="password" class="form-control">
+			  </div>
+			  <div class="form-group">
+				<label for="exampleInputPassword2">密码2</label>
+				<input name="passwd2" data-rule="{rule: ['required', 'match[eq, passwd1]'], placeholder: '重复上面的密码'}" type="password" class="form-control">
+			  </div>
+			  <div class="form-group">
+				<label for="exampleInputFile">File input</label>
+				<input name="help" data-rule="{rule: 'accept[jpg]'}" type="file" id="exampleInputFile">
+				<p class="help-block">Example block-level help text here.</p>
+			  </div>			  
+			  <div class="form-group">
+				<label for="exampleText">Textarea</label>
+				<textarea name="text" data-rule="{rule: 'required'}"></textarea>
+				
+			  </div>
+			  <div class="checkbox">
+				<label>
+				  <input name="rember" type="checkbox" data-rule="{rule: 'checked[eq, 1]', okMsg: ''}"> Check me out
+				</label>
+			  </div>
+			  <button type="submit" class="btn btn-default">Submit</button>
+			</form>		
+		</div>		
+		<script type="text/javascript">
+		jNode.set({ 
+			caches: [
+				
+						
+			],
+			alias: {
+				"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js",
+				"jquery.fn.attr": "/js/lib/jq-plugins/jquery.fn.attr.js",
+				"jquery.fn.metadata": "/js/lib/jq-plugins/jquery.fn.metadata.js",
+				"jquery.fn.dimension": "/js/lib/jq-plugins/jquery.fn.dimension.js",
+				"vui.widget": "/js/lib/vui/vui.widget.js",
+				"vui.util": "/js/lib/vui/vui.util.js",
+				"vui.menu": "/js/lib/vui/menu/menu.js",
+				"vui.button": "/js/lib/vui/button/button.js",
+				"vui.popover": "/js/lib/vui/popover/popover.js",
+				"vui.tabpanel": "/js/lib/vui/tabpanel/tabpanel.js",
+				"vui.page": "/js/lib/vui/page/page.js",
+				"vui.form": "/js/lib/vui/form/form.js",
+				"vui.modal": "/js/lib/vui/modal/modal.js",
+				"vui.countdown": "/js/lib/vui/countdown/countdown.js",
+				"vui.validator": "/js/lib/vui/validator/validator.js",
+				"vui.validator.rules": "/js/lib/vui/validator/validator.rules",
+				"api": "/js/api.js"
+			}, 
+			vars: {
+				lang: "en"
+			}
+		});
+		jNode.require([
+			"/skin/frontend/vip/default/js/theme"
+
+		], function() {
+			$('.form1').validator({
+				themes: {
+					'default': {
+						style: {
+							errorMsg: '',
+							placeholderMsg: '', 
+							okMsg: '', 
+							okInput: 'ok',
+							errorInput: 'error'
+						}
+					}
+				}, 			
+				fields: {
+					email: {
+						rule: function(elem) {
+							return /^[a-z]+$/i.test($(elem).val()) || '我不是电子邮件';
+						}
+					}
+				}
+			});
+		});
+		</script>  
+	</body>
+</html>

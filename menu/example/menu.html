@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Debug</title>
+		<link type="text/css" rel="stylesheet" href="http://global.vip.com/skin/frontend/vip/default/css/global.css" />
+		<script type="text/javascript" src="http://global.vip.com/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="http://global.vip.com/js/jquery/jquery.1.11.js"></script>
+	</head>
+	<body>
+		<div class="wrap" style="border: 1px solid red; padding: 40px;">
+			<button class="btn">Show me!</button>
+		</div>
+		<div id="main-nav" class="main-nav" widget="vui-menu" style="border:1px solid blue"></div>
+		<div id="side-nav" class="well" style="padding:8px 0;border:1px solid red"></div>
+		<div id="third-nav" class="well" style="padding:16px 0;border:1px solid yellow"></div>
+		<script type="text/javascript">
+	
+			jNode.set({
+				deps: [
+					"/js/jquery/jquery.ui.widget.js", 
+					"/js/lib/jq-plugins/jquery.fn.attr.js",
+					"/js/lib/jq-plugins/jquery.fn.metadata.js"
+				], 
+				alias: {
+					"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js"
+				}, 
+				vars: {
+					lang: "en"
+				}
+			});
+			jNode.require([
+				"/js/lib/vui/menu/menu"
+			], function() {
+				$('#main-nav').menu({
+					models: [
+						{
+							href: '#hello', selected: true, title: '配置管理', 
+							models: [
+								{
+									href: '#yes', selected: true, title: '资产管理', 
+									models: [
+										{href: 'asset/assetinfo', selected: true, title: '资产信息'},
+										{href: 'asset/add', selected: false, title: '资产新增'},
+										{href: 'purchase/purchaselist', selected: false, title: '采购信息'},	 
+										{href: 'purchase/purchaseadd', selected: false, title: '采购新增'},	 
+										{href: 'supplier/supplierlist', selected: false, title: '供应商信息'},	 
+										{href: 'supplier/supplieradd', selected: false, title: '供应商新增'},	 
+										// {href: 'console/formsubmit', selected: false, title: '表单提交'},
+										{href: 'console/validate', selected: false, title: '表单验证'}, 
+										{href: 'console/grid', selected: false, title: '扁平表格'}
+									]
+								}, 					
+								{
+									href: '#come', selected: false, title: '基础配置', 
+									models: [
+											 {href: 'config/oslist', selected: false, title: '操作系统信息'},
+											 {href: 'config/osadd', selected: false, title: '操作系统新增'},
+											 {href: 'config/typelist', selected: false, title: '设备类型信息'},	 
+											 {href: 'config/typeadd', selected: false, title: '设备类型新增'},	 
+											 {href: 'config/modellist', selected: false, title: '设备型号信息'},	 
+											 {href: 'config/modeladd', selected: false, title: '设备型号新增'},	 
+											 {href: 'config/serverlist', selected: false, title: '业务应用信息'},	 
+											 {href: 'config/serveradd', selected: false, title: '业务应用新增'}         
+									]
+								}, 					
+								{
+									href: '#oks', selected: false, title: '域名管理', 
+									models: [
+										{href: 'domainreg/domainreginfo', selected: false, title: '域名注册信息'}, 
+										{href: 'domainreg/domainregadd', selected: false, title: '域名注册新增'}, 
+										{href: 'domain/domainlist', selected: false, title: '域名基本信息'}, 
+										{href: 'domain/domainadd', selected: false, title: '域名信息新增'}, 
+										{href: 'domain/resolvelist', selected: false, title: '域名解析信息'},
+										{href: 'domain/resolveadd', selected: false, title: '域名解析新增'}
+									]
+								}, 
+								{
+									href: '#thanks', selected: false, title: 'IP管理', 
+									models: [
+										{href: 'iprange/iprangeinfo', selected: false, title: 'IP段-列表'}, 
+										{href: 'iprange/iprangeadd', selected: false, title: 'IP段-新增'}, 
+										{href: 'ip/ipinfo', selected: false, title: 'IP内网分配-列表'},
+										{href: 'ip/ipadd', selected: false, title: 'IP内网分配-新增'},
+										{href: 'ipport/ipportinfo', selected: false, title: 'IP端口使用-列表'},
+										{href: 'ipport/ipportadd', selected: false, title: 'IP端口使用-新增'}
+									]
+								},
+								{
+									href: '#thanks', selected: false, title: 'CDN管理', 
+									models: [
+										{href: 'cdn/cdninfo', selected: false, title: 'CDN频道配置-列表'},
+										{href: 'cdn/cdnadd', selected: false, title: 'CDN频道配置-新增'}
+									]
+								},
+								{
+									href: '#thanks', selected: false, title: '机房管理', 
+									models: [
+										{href: 'idc/idcinfo', selected: false, title: '机房信息-列表'},
+										{href: 'idc/idcadd', selected: false, title: '机房信息-新增'},
+										{href: 'idcrack/idcracklist', selected: false, title: '机柜信息-列表'},
+										{href: 'idcrack/idcrackadd', selected: false, title: '机柜信息-新增'},
+										{href: 'maintain/maintainlist', selected: false, title: '维护信息-列表'},
+										{href: 'maintain/maintainadd', selected: false, title: '维护信息-新增'},
+										{href: 'inspectionitem/inspectionitemlist', selected: false, title: '巡检项目-列表'},
+										{href: 'inspectionitem/inspectionitemadd', selected: false, title: '巡检项目-新增'},
+										{href: 'inspectionrecord/inspectionrecordlist', selected: false, title: '巡检记录-列表'},
+										{href: 'inspectionrecord/inspectionrecordadd', selected: false, title: '巡检记录-新增'}
+									]
+								},
+							]
+						}, 
+						{
+							href: '#world', selected: false, title: '数据报告', 
+							models: [
+								{
+									href: '#js', selected: true, title: '数据分析', 
+									models: [
+										{href: '#js1', selected: true, title: '客户端头'}, 
+										{href: '#js2', selected: false, title: '浏览器cookie'},
+										{href: '#js3', selected: false, title: '访客来源'}
+									]						
+								}, 
+								{href: '#css', selected: false, title: '数据挖掘'}
+							]
+						}, 
+						{
+							href: '#php', selected: false, title: '性能监控'
+						}, 
+						{
+							href: '#php', selected: false, title: '版本发布'
+						},
+						{
+							href: '#php', selected: false, title: '日志分析'
+						},			
+						{
+							href: '#php', selected: false, title: '用户管理'
+						},
+						{
+							href: '#xxx', selected: false, title: '操作日志',
+							models: [
+								{
+									href: '#js', selected: true, title: '操作日志', 
+									models: [
+										{href: 'log/loginfo', selected: true, title: '配置管理操作日志'}
+									]						
+								}
+							]
+						}
+					], 				
+					themes: {
+						'default': {
+							layout: [0, 0, 0], 
+							//withIcon: [0, 1, 1], 
+							xor: [true, true, true], 
+							expand: true, 						
+							style: {
+								menu: ['nav nav-pills pull-right fs14 bold', 'nav nav-list'], 
+								menuItem: ['menu-item'], 
+								menuSelected: ['active', '', 'active'], 
+								menuHeader: ['', 'nav-header'], 
+								menuDivider: ['', 'divider', ], 
+								menuShowIcon: ['icon-plus-sign menu-icon'],
+								menuHideIcon: ['icon-minus-sign'],
+								menuIcon: ['icon-chevron-right menu-icon menu-icon-default']
+							}
+						}
+					}, 
+					container: $('#side-nav, #third-nav'),	
+					//seo: true
+				});
+				
+			});
+		</script>  
+	</body>
+</html>

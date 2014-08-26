@@ -1,0 +1,127 @@
+﻿<!doctype html>
+<html>
+	<head>
+		<title>form</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<style type="text/css">
+		* {margin:0; padding:0;outline:none}
+		</style>
+		<link type="text/css" rel="stylesheet" href="/skin/frontend/vip/default/css/global.css" />
+		<link rel="stylesheet" type="text/css" href="/skin/frontend/vip/default/css/local.css" media="all" />
+		<style>
+			select,.buttons{float: left;}
+			.multiple-columns .vip-select-option-list {width: 300px !important;}
+			.vip-select-option-list {overflow: auto}
+		</style>
+		<script type="text/javascript" src="/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="/js/jquery/jquery.1.11.js"></script>	
+	</head>
+	<body style="padding:300px">
+
+		<form>
+			<select id="slt">
+				<option value="1">hello</option>
+				<option value="2">world</option>
+				<option value="3">php</option>
+				<option value="4">perl</option>				
+				<option value="5">hello</option>
+				<option value="6">world</option>
+				<option value="7">php</option>
+				<option value="8">perl</option>
+			</select>
+			<div class="buttons">
+				<button id="btn" type="button">add</button>
+				<button id="btn2" type="button">remove</button>
+				<button id="btn3">btn3</button>
+			</div>
+			<select id="multiple-sample" size="5">
+				<option value="1">hello</option>
+				<option value="2">world</option>
+				<option value="3">php</option>
+				<option value="4">perl</option>
+				<option value="5">hello</option>
+				<option value="6">world</option>
+				<option value="7">php</option>
+				<option value="8">perl</option>
+				<option value="9">hello</option>
+				<option value="10">world</option>
+				<option value="11">php</option>
+				<option value="12">perl</option>
+				<option value="13">hello</option>
+				<option value="14">world</option>
+				<option value="15">php</option>
+				<option value="16">perl</option>
+				<option value="17">hello</option>
+				<option value="18">world</option>
+				<option value="19">php</option>
+				<option value="20">perl</option>
+			</select>
+			
+		</form>
+		<script type="text/javascript">
+			jNode.set({
+				alias: {
+					"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js", 
+					"jquery.fn.attr": "/js/lib/jq-plugins/jquery.fn.attr.js",
+					"jquery.fn.metadata": "/js/lib/jq-plugins/jquery.fn.metadata.js",
+					"jquery.fn.dimension": "/js/lib/jq-plugins/jquery.fn.dimension.js"
+				}, 
+				vars: {
+					lang: "en"
+				}
+			});
+			jNode.require([
+				"/js/lib/vui/form/form"
+			], function() {
+				$.vui.widgetSetup('form', {
+					themes: {
+						'default': {
+							style: {
+								// 选择框
+								select: 'vip-select', 
+								selectOpen: 'vip-open', 
+								selectClose: 'vip-close', 
+								selectFocus: 'vip-select-focus', 
+								selectHover: 'vip-select-hover', 
+								selectCombox: 'vip-select-combox',
+								selectInput: 'vip-select-input', 
+								selectArrow: 'vip-select-arrow icon-select-down-arrow', 
+								selectOptionList: 'vip-select-option-list', 
+								selectOption: 'vip-select-option', 
+								selectOptionSelected: 'vip-select-selected'
+							}
+						},
+						'multiple-columns': {
+							style: {
+								// 选择框
+								selectOpen: 'vip-open', 
+								selectClose: 'vip-close', 								
+								select: 'vip-select multiple-columns',
+								selectFocus: 'vip-select-focus', 
+								selectHover: 'vip-select-hover', 
+								selectCombox: 'vip-select-combox', 
+								selectInput: 'vip-select-input', 
+								selectArrow: 'vip-select-arrow icon-select-down-arrow', 
+								selectOptionList: 'vip-select-option-list', 
+								selectOption: 'vip-select-option', 
+								selectOptionSelected: 'vip-select-selected'
+							}
+						},
+					}
+				});
+				$('form').form();
+				$('#multiple-sample').select2({
+					theme: 'multiple-columns'
+				});
+
+				$('#btn').click(function() {
+					$('#slt').select2('add', {text: 'node.js', value: 5}, 3);
+				});			
+				$('#btn2').click(function() {
+					$('#slt').select2('remove', 3);
+				});
+			});
+		</script> 		
+		
+	</body>
+</html>

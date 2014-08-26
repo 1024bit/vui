@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Debug</title>
+		<link type="text/css" rel="stylesheet" href="http://global.vip.com/skin/frontend/vip/default/css/global.css" />
+		<link rel="stylesheet" type="text/css" href="http://global.vip.com/skin/frontend/vip/default/css/local.css" media="all" />
+		<script type="text/javascript" src="http://global.vip.com/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="http://global.vip.com/js/jquery/jquery.1.11.js"></script>
+	</head>
+	<body>
+		<div class="wrap" style="border: 1px solid red; padding: 200px 400px; width: auto;">
+			<button class="btn">Show me!</button>
+		</div>
+		<script type="text/javascript">
+	
+			jNode.set({
+				alias: {
+					"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js", 
+					"jquery.fn.attr": "/js/lib/jq-plugins/jquery.fn.attr.js",
+					"jquery.fn.metadata": "/js/lib/jq-plugins/jquery.fn.metadata.js",
+					"jquery.fn.dimension": "/js/lib/jq-plugins/jquery.fn.dimension.js"
+				},  
+				vars: {
+					lang: "en"
+				}
+			});
+			jNode.require([
+				"/js/lib/vui/popover/popover"
+			], function() {
+				$.vui.widgetSetup('popover', {
+					themes: {
+						'default': {
+							style: {
+								popOver: 'popover',
+								popTitle: 'popover-title', 
+								popContent: 'popover-content',   
+								popTop: 'popover-top',
+								popLeft: 'popover-left',
+								popBottom: 'popover-bottom',
+								popRight: 'popover-right', 
+								popTopArrow: 'popover-arrow icon-popover-top-arrow',
+								popLeftArrow: 'popover-arrow icon-popover-left-arrow',
+								popRightArrow: 'popover-arrow icon-popover-right-arrow',
+								popBottomArrow: 'popover-arrow icon-popover-bottom-arrow',
+								popClose: 'popover-close icon-close-14'
+							}
+						}
+					}	
+				});
+				$('.btn').popover({
+					popOver: 'popover',				
+					content: "hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world", 
+					placement:"bottom",
+					closable: true
+					// delay:1000
+				});
+			});
+		</script>  
+	</body>
+</html>

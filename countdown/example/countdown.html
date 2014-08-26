@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Debug</title>
+		<link type="text/css" rel="stylesheet" href="http://global.vip.com/skin/frontend/vip/default/css/global.css" />
+		<link rel="stylesheet" type="text/css" href="http://global.vip.com/skin/frontend/vip/default/css/local.css" media="all" />
+		<script type="text/javascript" src="http://global.vip.com/js/lib/jnode/jnode.js"></script>
+		<script type="text/javascript" src="http://global.vip.com/js/jquery/jquery.1.11.js"></script>
+	</head>
+	<body>
+		<div class="wrap" style="border-bottom: 1px solid #333; padding: 40px 0;" data-countdown="1406532376">
+		</div>		
+		<div class="wrap" style="border-bottom: 1px solid #333; padding: 40px 0;" data-countdown="1406532276">
+		</div>
+		<script type="text/javascript">
+		jNode.set({ 
+			alias: {
+				"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js", 
+				"jquery.fn.attr": "/js/lib/jq-plugins/jquery.fn.attr.js",
+				"jquery.fn.metadata": "/js/lib/jq-plugins/jquery.fn.metadata.js", 
+				"jquery.fn.dimension": "/js/lib/jq-plugins/jquery.fn.dimension.js",				
+				"vui.widget": "/js/lib/vui/vui.widget.js", 
+				"vui.util": "/js/lib/vui/vui.util.js",
+			}, 
+			vars: {
+				lang: "en"
+			}
+		});
+		var refer = parseInt((new Date().getTime()) / 1000);
+		jNode.require([
+			"/js/lib/vui/countdown/countdown.js"
+		], function() {
+			$('.wrap').eq(0).countdown({
+				startDate: refer, 
+				endDate: parseInt((+(new Date()) + 5 * 60 * 1000) / 1000), // 5分钟后
+				showDay: false
+			});
+			$('.wrap').eq(1).countdown({
+				startDate: refer, 
+				endDate: parseInt((+(new Date()) + 2 * 60 * 1000) / 1000), // 2分钟后
+				showDay: false,
+				interval: 2000
+			});
+		});
+		</script>  
+	</body>
+</html>
