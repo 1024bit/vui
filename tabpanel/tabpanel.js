@@ -9,8 +9,8 @@
  *  Event:
  *  tabload tabloadfailed tabselect
  *
- *  Copyright(c) 2014 vip.com
- *  Copyright(c) 2014 Cherish Peng<cherish.peng@vip.com>
+ *  Copyright(c) 2014 xx.com
+ *  Copyright(c) 2014 Cherish Peng<cherish.peng@xx.com>
  *  MIT Licensed 
  */
 define(function(require, exports) {

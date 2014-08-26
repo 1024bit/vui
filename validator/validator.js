@@ -23,8 +23,8 @@
  *   
  *  Event: validatesuccess, validateok, validateerror
  *
- *  Copyright(c) 2014 vip.com
- *  Copyright(c) 2014 Cherish Peng<cherish.peng@vipshop.com>
+ *  Copyright(c) 2014 xx.com
+ *  Copyright(c) 2014 Cherish Peng<cherish.peng@xx.com>
  *  MIT Licensed
  */
 define(function(require, exports) {
