@@ -40,6 +40,8 @@ define(function(require, exports) {
 				selected: 'selected', 
 				alias: 'alias'
 			}, 
+			// As stuff is used to fill left-padding, may be '&nbsp;&nbsp;&nbsp;&nbsp;'
+			repeatChar: '', 
 			// Skin
 			themes: {
 				'default': {
@@ -51,6 +53,9 @@ define(function(require, exports) {
 					xor: true, 
 					// By default, whether the sub-menu is expanded or not
 					expand: false, 
+					// If the menu has sub-menu then will replace the original href to archor
+					// When set to false then the link's default behavior is actived
+					useArchor: true, 
 					// Classname
 					style: { 
 						// Support array or string
@@ -65,7 +70,7 @@ define(function(require, exports) {
 			// 0: output top level menus + all sub-menu of actived top level menu
 			// 1: only output top level menus; 
 			// 2: All menus
-			structure: 0, 
+			structure: 2, 
 			// Menu container
 			container: $()
 		}, 
@@ -117,36 +122,36 @@ define(function(require, exports) {
 				$active = this.element.find('#' + options.prefix + '-0 .' 
 					+ options.classPrefix + '-selected-0');
 			}
-			$active.length && this.select($active, $active.length - 1);
+			$active.length && this.select($active);
 		},
 		// Select panel
 		// Consider the dynamic datasource, don't support the digit index
 		// select('#hello'), select(alias), select('http://www.xx.com'), select($('xxx'))
-		select: function (href, level) {
-			level = level || 0;
+		select: function (href) {
 			var 
 			options = this.options, 
 			events = options.events,
-			$menuItem, 
+			$menuItem, level, 
 			styMenuItem = '.' + options.classPrefix + '-item-', 
-			$ctnr = $(util.getOrLast(options.container, level)), router;
+			$ctnr = options.container, router;
 
 			if (href instanceof $) {
 				$menuItem = href;
 			} else {
-				$menuItem = $ctnr.find((styMenuItem + level) + '[href="' + href + '"]');
+				href = util.escape(href, '[]');
+				$menuItem = $ctnr.find('a[href="' + href + '"]');
 				if (!$menuItem.length)
-					$menuItem = $ctnr.find((styMenuItem + level) + '[alias="' + href + '"]');
+					$menuItem = $ctnr.find('a[alias="' + href + '"]');
 			}
-
 			if (!$menuItem.length) {
-				this.raise(options.messages.selectError, 'error');
+				//this.raise(options.messages.selectError, 'error');
 				return;
 			}
 
 			// while ($menuItem.length && ($.inArray($menuItem[0], actives) === -1)) {
+			level = $menuItem.closest('ul').attr('level');
 			router = this._getRouter($menuItem, level);
-			router[0].trigger((events[0] || 'click') + this.eventNamespace);
+			router[0].trigger((events[0] || 'click') + this.eventNamespace, [0, false]);
 		},	
 		_attachEvent: function() {
 			var 
@@ -177,45 +182,32 @@ define(function(require, exports) {
 				});
 				*/
 				$ctnr.on(evtty + self.eventNamespace, styMenuItem + i, i, function(e, i, manual) {
-					// Prevent dual event from triggering between click and select
-					e.stopPropagation();
-					e.preventDefault();
-
 					// Passed by trigger and on
 					i = i || e.data;
 					// Manual trigger
 					manual = (manual === false) ? false : true;
+					if (manual && !util.getOrLast(theme.useArchor, i) && e.target === this) return;
+
+					// Prevent dual event from triggering between click and select
+					e.stopPropagation();
+					if (e.target !== this) {
+						e.preventDefault();
+					}
 					
 					var  
 					// Sync theme
 					$this = $(this), 
 					level = i, bound = level + 1, 
 					isArchor = $this.hasClass(clshdr + level),              
-					$href, $next, $xor, hash, index, 
+					$href = $(), $next, $xor, hash, 
 					xor = util.getOrLast(theme.xor, level), 					
 					hideiconcls = util.getOrLast(style.menuHideIcon, level),
 					withIcon = util.getOrLast(theme.withIcon, level);
 					
-					// <IE8, href="#" will return http://www.xx.com#
-					hash = $this.attr('href');
-					index = hash.indexOf('#');
-					hash = hash.slice((index < 0) ? index + 1 : index);
+					hash = $this.attr('alias');
 
 					// Repeat click
 					// if ($.inArray(this, actives) !== -1) return;
-
-					if (xor) {
-						$ctnr = $(options.container.slice(bound));
-						$ctnr.each(function(i) {
-							$xor = $(this).find(styMenu + (bound + i) + ':visible').hide();
-							if (0 === i) {
-								$xor = $(util.getOrLast(options.container, level))
-									.find('[href=#' + $xor.attr('id') + ']');
-								withIcon && $xor.find('.' + clsshowicon)
-									.toggleClass(hideiconcls);
-							}
-						});
-					}
 					
 					if (!isArchor) {
 						router = self._getRouter($this, level);					
@@ -242,7 +234,6 @@ define(function(require, exports) {
 						} else {
 							// Bubble select event, then the third party can listen
 							e.type = 'select';
-							console.log(e)
 							self._trigger(e);
 						}						
 					} else {
@@ -253,7 +244,7 @@ define(function(require, exports) {
 							.toggleClass(hideiconcls);
 				
 						// Just for tree
-						if (manual && $href.is(':visible') && theme.layout[level]) {
+						if (manual && $href.is(':visible') && util.getOrLast(theme.layout, level)) {
 							$href.hide();
 							return;
 						}
@@ -265,12 +256,26 @@ define(function(require, exports) {
 								, [bound, false]);
 						} 
 					}
+					
+					if (xor) {
+						$ctnr = $(options.container.slice(level));
+						$ctnr.each(function(i) {
+							$xor = $(this).find(styMenu + (bound + i) + ':visible').not($href).hide();
+
+							$xor = $(util.getOrLast(options.container, level + i))
+								.find('[alias=#' + $xor.attr('id') + ']');
+							util.getOrLast(theme.withIcon, level + i) && $xor.find('.' + clsshowicon)
+								.toggleClass(hideiconcls);
+
+						});
+					}					
 				});
 				// For cleaning event
 				if (i !== 0) {
 					self.bindings = self.bindings.add($ctnr);
 				}
 			}
+			this._super.apply(this, arguments);
 		},      
 		// Unlimited level menu
 		_draw: function(models) {
@@ -293,8 +298,8 @@ define(function(require, exports) {
 					+ util.getOrLast(style.menu, level)  + ' ' + (options.classPrefix + '-' + level) 
 						+ '" id="' + id + '">', 
 				_models, link,  
-				isArray, isTree, isSelected, gotoNxt, styMenuDivider, withIcon, 
-				repeat = 0, repeatstr = '&nbsp;&nbsp;&nbsp;&nbsp;', 
+				useArchor, isArray, isTree, isSelected, gotoNxt, styMenuDivider, withIcon, 
+				repeat = 0, 
 				clsicon = options.classPrefix + '-icon', 
 				clsshowicon = options.classPrefix + '-show-icon';
 				
@@ -304,15 +309,17 @@ define(function(require, exports) {
 				$.each(models, function(idx, model) {
 					_models = model[dict.models];
 					isArray = $.isArray(_models);
-					isTree = theme.layout[level];
 					isSelected = model[dict.selected];
-					withIcon = theme.withIcon[level];
+					isTree = util.getOrLast(theme.layout, level);
+					withIcon = util.getOrLast(theme.withIcon, level);
+					useArchor = util.getOrLast(theme.useArchor, level);
 					styMenuDivider = util.getOrLast(style.menuDivider, level);
 					gotoNxt = (options.structure === 2) || (options.structure === 0);
 				
 					link = id + '-' + idx;
-					isArray && (model[dict.href] = '#' + link);
-					!model[dict.alias] && (model[dict.alias] = model[dict.href]);
+					//isArray && useArchor && (model[dict.href] = '#' + link);
+					isArray && useArchor && (model[dict.href] = '');
+					!model[dict.alias] && (model[dict.alias] = !model[dict.href].indexOf('#') ? model[dict.href] : ('#' + link));
 					
 					html += '<li><a class="' 
 						+ (options.classPrefix + '-item-' + level) 
@@ -321,7 +328,7 @@ define(function(require, exports) {
 							+ (' ' + util.getOrLast(style.menuHeader, level))) : '') 
 						+ (isSelected ? (' ' + options.classPrefix + '-selected-' + level 
 							+ ' ' + util.getOrLast(style.menuSelected, level)) : '') 
-						+ '"' + ' tabIndex="' + (tabIndex++) + '"';
+						+ '"' + ' tabindex="' + (tabIndex++) + '"';
 					$.each(model, function(key, val) {
 						switch (key) {
 							case dict.models:
@@ -333,7 +340,7 @@ define(function(require, exports) {
 						}
 					});
 					html += '>' 
-						+ (isArray ? '' : util.repeat(repeatstr, repeat)) 
+						+ (isArray ? '' : util.repeat(options.repeatChar, repeat)) 
 						+ (withIcon ? '<i class="' + clsicon + ' ' 
 							+ (isArray ? (clsshowicon + ' ' + style.menuShowIcon) 
 								: style.menuIcon) 
@@ -366,11 +373,14 @@ define(function(require, exports) {
 			router = [], 
 			options = this.options, 
 			style = options.themes[options.theme].style, 
+			prefix = options.prefix, 
 			styMenu = '.' + options.classPrefix + '-', 
 			styMenuItem = '.' + options.classPrefix + '-item-', 
 			$menu, bound = level;
 			
 			while ($menuItem.length) {
+				// Ensure the tree-data is correct
+				$menuItem.addClass('vui-menu-selected-' + bound + ' ' + util.getOrLast(style.menuSelected, bound));
 				router.unshift($menuItem);
 				$menu = $menuItem.closest(styMenu + bound);
 				
@@ -378,7 +388,7 @@ define(function(require, exports) {
 				bound--;
 
 				$menuItem = $(util.getOrLast(options.container, bound))
-					.find(styMenuItem + bound + '[href="#' + $menu.attr('id') + '"]');
+					.find(styMenuItem + bound + '[alias="#' + $menu.attr('id') + '"]');
 			}
 			return router;
 		}, 		

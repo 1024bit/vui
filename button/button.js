@@ -57,19 +57,16 @@ define(function(require, exports) {
 			btnevtmap = {}, timer;
 			
 			btnevtmap['click'] = function(e) {
-				if (e.target === e.currentTarget.button) {
-					// Prevent raw button's default behaviour, eg: refresh page
-					if (options.preventDefault) e.preventDefault();
-					return;
-				}
 				if (e.target.loading) return;
 				
 				var $el = $(e.target), evt;
 				// Trigger events were bound at the raw btn
 				evt = $.Event('click');
+				// Prevent raw button's default behaviour, eg: refresh page
+				if (options.preventDefault) evt.preventDefault();
 				$(e.target.button).trigger(evt);
-				// Prevent the repeat click in `loadMsgDelay` ms
 				
+				// Prevent the repeat click in `loadMsgDelay` ms
 				timer = setTimeout(function() {
 					e.target.loading = true;
 					$el.addClass(style.btnLoading);
@@ -129,11 +126,12 @@ define(function(require, exports) {
 				'position', 'display', 'float', 'top', 'left', 
 				'margin-top', 'margin-right', 'margin-bottom', 'margin-left'
 			]);
-			this.$button.insertAfter($btn).append($btn.hide());
+			this.$button.insertAfter($btn);
+			$btn.hide();
 			this.$button
 				.dimWidth(options.width ? options.width : $btn.outerWidth())
 				.dimHeight(options.height ? options.height : $btn.outerHeight());
-			this.$button.css('line-height', this.$button.height() + 'px');
+			this.$button.css(css).css('line-height', this.$button.height() + 'px');
 		
 			this.$button[0].button = $btn[0];
 

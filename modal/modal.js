@@ -79,7 +79,7 @@ define(function(require, exports) {
 			modalevtmap = {};
 			
 			modalevtmap['click .' + clsbtn] = function(e) {
-				if (this._trigger($(e.target).data('vui-event'))) {
+				if (this._trigger($(e.target).data('vui-modal-event'))) {
 					this.close();
 				} 
 			};
@@ -106,7 +106,7 @@ define(function(require, exports) {
 			} else if (btns.length) {
 				for (; i < btns.length; i++) {
 					htmlbtn += '<button class="' + clsbtn + ' ' + util.getOrLast(style.modalBtn, i) 
-						+ '" data-vui-event="' + btns[i]['event'] 
+						+ '" data-vui-modal-event="' + btns[i]['event'] 
 						+ '">' + btns[i]['value'] + '</button>';
 				}
 			}
@@ -117,7 +117,7 @@ define(function(require, exports) {
 			html = '<div class="' + clsmodal + ' ' + style.modal + ' ' + options.type + '">' 
 				+ (options.title ? '<h3 class="' + clstitle + ' ' + style.modalTitle + '">' + options.title + '</h3>' : '') 
 				+ '<div class="' + clscontent + ' ' + style.modalContent + '">' + options.content + '</div>'
-				+ '<button type="button" class="' + clsbtn + ' ' + style.modalClose + '" data-vui-event="close" aria-hidden="true">&times;</button>' 
+				+ '<button type="button" class="' + clsbtn + ' ' + style.modalClose + '" data-vui-modal-event="close" aria-hidden="true">&times;</button>' 
 				+ htmlbtn 
 				+ '</div>';
 			this.$modal = $(html).css({'position': 'absolute'}).appendTo(document.body);

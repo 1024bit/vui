@@ -84,11 +84,15 @@ define(function(require, exports) {
 			
 			var self = this, 
 				// Retrieves a collection, in source order, of all controls in a given form			
-				$elements = $(this.element.get(0).elements);
+				$elements = $(this.element.get(0).elements), 
+				// $force are those with hidden or disabled prop
+				$force = $elements.filter(function () {
+					return $(this).attr('data-vui-validator-force') === 'force';
+				});
 			
 			this.element.attr('novalidate', 'novalidate');
 			// Ignore disabled and hidden element
-			$elements.not(':hidden').not(':disabled').each(function() {
+			$elements.not(':hidden').not(':disabled').not(':button').add($force).each(function() {
 				self.parseRule($(this));
 			});		
 		}, 
@@ -145,10 +149,13 @@ define(function(require, exports) {
 		validate: function() {
 			this.element.attr('validate', '');
 			this.isDefaultPrevented = false;
-			var self = this, $elements = $(this.element.get(0).elements), 
-					$elem, metadata, rtr;
-			
-			$elements.not(':hidden').not(':disabled').each(function() {
+			var 
+			self = this, 
+			$elements = $(this.element.get(0).elements), 
+			$force = $elements.filter(function () {
+				return $(this).attr('data-vui-validator-force') === 'force';
+			}), $elem, metadata, rtr;
+			$elements.not(':hidden').not(':disabled').not(':button').add($force).each(function() {
 				$elem = $(this);
 				// if (metadata.valid === true) return;
 				return self._exec($elem);

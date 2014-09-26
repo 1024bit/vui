@@ -9,7 +9,7 @@
 		<link type="text/css" rel="stylesheet" href="/skin/frontend/vip/default/css/global.css" />
 		<link rel="stylesheet" type="text/css" href="/skin/frontend/vip/default/css/local.css" media="all" />
 		<style>
-			select,.buttons{float: left;}
+			select,.buttons{height:28px}
 			.multiple-columns .vip-select-option-list {width: 300px !important;}
 			.vip-select-option-list {overflow: auto}
 		</style>
@@ -17,24 +17,68 @@
 		<script type="text/javascript" src="/js/jquery/jquery.1.11.js"></script>	
 	</head>
 	<body style="padding:300px">
+		<select id="slt2">
+		</select>
+		<script type="text/javascript">
+			var i = 0, html = '';
+			while (i++ < 1) {
+				html += 
+				'<option>hyou</option>' + 
+				'<option value="2">women</option>' + 
+				'<option value="3">php</option>' + 
+				'<option value="4">ps</option>' + 
+				'<option value="5">hello</option>' + 
+				'<option value="6">world</option>' + 
+				'<option value="7">python</option>' + 
+				'<option value="8">perl</option>'	+ '<option value="1">hyou</option>' + 
+				'<option value="2">women</option>' + 
+				'<option value="3">php</option>' + 
+				'<option value="4">ps</option>' + 
+				'<option value="5">hello</option>' + 
+				'<option value="6">world</option>' + 
+				'<option value="7">python</option>' + 
+				'<option value="8">perl</option>'					+'<option value="1">hyou</option>' + 
+				'<option value="2">women</option>' + 
+				'<option value="3">php</option>' + 
+				'<option value="4">ps</option>' + 
+				'<option value="5">hello</option>' + 
+				'<option value="6">world</option>' + 
+				'<option value="7">python</option>' + 
+				'<option value="8">perl</option>'	+ '<option value="1">hyou</option>' + 
+				'<option value="2">women</option>' + 
+				'<option value="3">php</option>' + 
+				'<option value="4">ps</option>' + 
+				'<option value="5">hello</option>' + 
+				'<option value="6">world</option>' + 
+				'<option value="7">python</option>' + 
+				'<option value="8" >perl</option>'			
+			}
+			$('#slt2').html(html);
+		</script>
 
 		<form>
+			<div><input id="ipt" list="slt2" type="text" autocomplete="on" vui-listsize="5" /></div>
+			<div>
 			<select id="slt">
+				<option>please</option>
 				<option value="1">hello</option>
 				<option value="2">world</option>
 				<option value="3">php</option>
 				<option value="4">perl</option>				
-				<option value="5">hello</option>
-				<option value="6">world</option>
-				<option value="7">php</option>
-				<option value="8">perl</option>
+				<option value="5">haha</option>
+				<option value="6">women</option>
+				<option value="7">python</option>
+				<option value="8">phtml</option>
+				<option value="9">ps</option>
+				<option value="10">ok</option>
 			</select>
+			</div>
 			<div class="buttons">
 				<button id="btn" type="button">add</button>
 				<button id="btn2" type="button">remove</button>
 				<button id="btn3">btn3</button>
 			</div>
-			<select id="multiple-sample" size="5">
+			<select id="multiple-sample">
 				<option value="1">hello</option>
 				<option value="2">world</option>
 				<option value="3">php</option>
@@ -64,7 +108,10 @@
 					"jquery.ui.widget": "/js/jquery/jquery.ui.widget.js", 
 					"jquery.fn.attr": "/js/lib/jq-plugins/jquery.fn.attr.js",
 					"jquery.fn.metadata": "/js/lib/jq-plugins/jquery.fn.metadata.js",
-					"jquery.fn.dimension": "/js/lib/jq-plugins/jquery.fn.dimension.js"
+					"jquery.fn.dimension": "/js/lib/jq-plugins/jquery.fn.dimension.js", 
+					"jquery.fn.nthsize": "/js/lib/jq-plugins/jquery.fn.nthsize.js", 
+					"jquery.fn.guessposition": "/js/lib/jq-plugins/jquery.fn.guessposition.js", 
+					"jquery.fn.scrollto": "/js/lib/jq-plugins/jquery.fn.scrollto.js"
 				}, 
 				vars: {
 					lang: "en"
@@ -77,10 +124,14 @@
 					themes: {
 						'default': {
 							style: {
+								autocomplete: 'vip-select-option-list', 
+								autocompleteInput: 'vip-select-input', 
+								autocompleteInputFocus: '', 
+								autocompleteItem: 'vip-select-option', 
 								// 选择框
 								select: 'vip-select', 
-								selectOpen: 'vip-open', 
-								selectClose: 'vip-close', 
+								selectOpen: 'vip-select-open', 
+								selectClose: 'vip-select-close', 
 								selectFocus: 'vip-select-focus', 
 								selectHover: 'vip-select-hover', 
 								selectCombox: 'vip-select-combox',
@@ -94,8 +145,8 @@
 						'multiple-columns': {
 							style: {
 								// 选择框
-								selectOpen: 'vip-open', 
-								selectClose: 'vip-close', 								
+								selectOpen: 'vip-select-open', 
+								selectClose: 'vip-select-close', 								
 								select: 'vip-select multiple-columns',
 								selectFocus: 'vip-select-focus', 
 								selectHover: 'vip-select-hover', 

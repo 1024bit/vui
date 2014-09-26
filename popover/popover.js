@@ -49,6 +49,9 @@ define(function(require, exports) {
 			closable: false,
 			// Whether only one instance can be show at the same time
 			xor: false, 
+			// Where to dock the popover
+			// Selector or jQuery object
+			dock: null, 
 			// Popover type, value is provided by the third party
 			type: ''
 			
@@ -113,16 +116,19 @@ define(function(require, exports) {
 			+ '<div class="' + clscontent + ' ' + style.popContent + '">' + options.content + '</div>'
 			+ (options.closable ? '<button type="button" class="' + clsclose + ' ' + style.popClose + '" aria-hidden="true">&times;</button>' : '') 
 			+ '</div>';
-			this.$popover = $(html).css({'position': 'absolute'}).hide().appendTo(this.element.parent());
+			this.$dock = $(options.dock);
+			if (!this.$dock.length) this.$dock = this.element;
+			this.$popover = $(html).css({'position': 'absolute'}).hide().appendTo(this.$dock.parent());
 		}, 
 		show: function() {
 			var 
 			self = this, 
 			options = this.options, 	
 			clsarrow = this.options.classPrefix + '-arrow', 				
-			$arrow, arwsz, docsz, tgtsz, popsz, arwofs, docofs, tgtofs, 
+			$arrow, $dock = this.$dock, 
+			arwsz, docsz, tgtsz, popsz, arwofs, docofs, tgtofs, 
 			margin, top, left, bottom, right, dist, popofs;
-			
+
 			// For hidden, free-size element
 			this.$popover.show();
 			if (options.xor) {
@@ -135,11 +141,11 @@ define(function(require, exports) {
 			$arrow = this.$popover.find('.' + clsarrow);
 			arwsz = {w: $arrow.outerWidth(), h: $arrow.outerHeight()};
 			docsz = {w: this.document.width(), h: this.document.height()};
-			tgtsz = {w: this.element.outerWidth(), h: this.element.outerHeight()};
+			tgtsz = {w: $dock.outerWidth(), h: $dock.outerHeight()};
 			popsz = {w: this.$popover.outerWidth(), h: this.$popover.outerHeight()};
 			arwofs = $arrow.position(); 
 			docofs = {top: this.document.scrollTop(), left: this.document.scrollLeft()};		
-			tgtofs = this.element.position();
+			tgtofs = $dock.position();
 			margin = {top: $arrow.outerHeight(true) - arwsz.h, left: $arrow.outerWidth(true) - arwsz.w};			
 			
 			switch (options.placement) {
