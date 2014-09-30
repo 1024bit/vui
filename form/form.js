@@ -27,6 +27,7 @@ define(function (require, exports) {
 	require('jquery.fn.dimension');
     require('jquery.fn.nthsize');
     require('jquery.fn.guessposition');
+    require('jquery.fn.scrollto');
 
     $.widget('vui.form', $.vui.widget, {
         options: {
@@ -34,14 +35,13 @@ define(function (require, exports) {
                 'default': {
                     style: {
 						// Autocomplete
-						autocomplete: '', autocompleteInput: '', autocompleteInputFocus: '', autocompleteItem: '', 
-						autocompleteItemHover: '', 
+						autocomplete: '', autocompleteInput: '', autocompleteInputFocus: '', autocompleteItem: '', autocompleteItemHover: '', 
                         // Checkbox
                         checkbox: '', checkboxChecked: '', checkboxDisabled: '',
                         // Select
                         select: '', selectFocus: '', selectHover: '', selectOpen: '', selectClose: '',
                         selectInput: '', selectInputFocus: '', selectArrow: '', selectCombox: '',
-                        selectOptionList: '', selectOption: '', selectOptionSelected: '', selectOptionDisabled: ''
+                        selectOptionList: '', selectOption: '', selectOptionHover: '', selectOptionSelected: '', selectOptionDisabled: ''
                     }
                 }
             }
@@ -58,10 +58,14 @@ define(function (require, exports) {
                 options = this.options, style = options.themes[options.theme].style,
                 clspfx = options.classPrefix,
                 clschkchk = clspfx + '-checkbox-checked',
+				clsslt = clspfx + '-select', 
                 clssltoptslt = clspfx + '-select-option-selected',
+                clssltopthvr = clspfx + '-select-option-hover',
                 clssltoptdbd = clspfx + '-select-option-disabled',
                 clssltfcs = clspfx + '-select-focus',
                 clssltiptfcs = clspfx + '-select-input-focus',
+				clsauto = clspfx + '-autocomplete', 
+				clsautoipt = clspfx + '-autocomplete-input', 
 				clsautoiptfcs = clspfx + '-autocomplete-input-focus', 
 				clsautoopthvr = clspfx + '-autocomplete-item-hover', 
 				sltcbx = 'span.' + clspfx + '-checkbox',
@@ -77,14 +81,129 @@ define(function (require, exports) {
 				autofcs = 'input.' + clspfx + '-autocomplete-input-focus', 
 				evtmap = {};
 
-            // Checkbox event
+            /**
+			 * Checkbox event
+			 */
             evtmap['click ' + sltcbx] = function (e) {
                 var $target = $(e.target);
                 $target.toggleClass(style.checkboxChecked);
                 $(e.target.checkbox).prop('checked', $target.hasClass(clschkchk));
             };
 
-            // Input event
+            /**
+			 * Autocomplete event
+			 */
+			// The focus event is triggered before click event
+			evtmap['focus ' + autocpt] = function (e) {
+				var input = e.currentTarget.input;
+				if (input.asyncBlur) {
+                    clearTimeout(input.asyncBlur);
+                    input.asyncBlur = undefined;
+                }	
+				if (input.asyncChange) {
+					clearTimeout(input.asyncChange);
+					input.asyncChange = undefined;
+				}					
+			};
+			evtmap['click ' + autoopt] = function (e) {
+				var 
+				$autocomplete = $(e.target).closest(autocpt), 
+				$input = $($autocomplete[0].input), $current = $(e.currentTarget), 
+				oldval = $input.val(), newval = $current.text();
+				
+				$input[0].latestValue = '';
+				$autocomplete.hide().css('zIndex', 'auto');
+				if (oldval !== newval) {
+					$input.val(newval).trigger('change', $current.attr('value'));
+				}				
+			};
+			evtmap['mouseenter ' + autoopt] = evtmap['mouseleave ' + autoopt] = function (e) {
+				var isenter = (e.type === 'mouseenter');
+				if (isenter && $(e.currentTarget).parent().find(autoopthvr).length) return;
+				$(e.currentTarget).toggleClass(clsautoopthvr + ' ' + style.autocompleteItemHover, isenter);			
+			};
+			// When the `autocomplete` is turn on then the second focus will trigger the `autocomplete` feature
+			evtmap['click ' + autoipt] = function (e) {
+				var $current = $(e.target), oneClickShow = ($current.attr('data-vui-input-oneclickshow') == 1);
+				if (oneClickShow) {
+					onAutocompleteKeyup.apply(this, arguments);
+				} else {
+					if ($current.hasClass(clsautoiptfcs)) {
+						onAutocompleteKeyup.apply(this, arguments);
+					} 				
+				}
+				// The focus event is underlying than click event
+				// The Click event is a kind of virtual event
+				$current.addClass(clsautoiptfcs + ' ' + style.autocompleteInputFocus);
+			};	
+			evtmap['keyup ' + autoipt] = onAutocompleteKeyup;
+			evtmap['keydown ' + autoipt] = function(e) {
+				var 
+				self = this, which = e.which, upOrDownKey = (e.which === 38 || e.which === 40), upKey, 
+				$autoipt = this.$(autofcs), $autocomplete = $autoipt.next(autocpt), $autoopthvr, $hover, 
+				hvrcls = clsautoopthvr + ' ' + style.autocompleteItemHover, timer, text;
+				
+				if ($autocomplete.is(':hidden')) return;
+				
+				$autoipt[0].latestValue = $autoipt.val();
+				
+				if (upOrDownKey) {
+					$autoopthvr = $autocomplete.find(autoopthvr);
+					upKey = (e.which === 38);
+					if ($autoopthvr.length) {
+						$autoopthvr.removeClass(hvrcls);
+						$hover = $autoopthvr[upKey ? 'prev' : 'next']();
+						if (!$hover.length) {
+							$hover = $($autocomplete[0][upKey ? 'lastChild' : 'firstChild']);
+						}
+						$hover.addClass(hvrcls);
+					} else {
+						$hover = $($autocomplete[0][upKey ? 'lastChild' : 'firstChild']);
+						// Set a maximum to scroll to bottom
+						// 违背常理的现象一定是假象
+						$hover.addClass(hvrcls);
+					}
+					text = $hover.text();
+					if (text !== $autoipt.val()) {
+						$autoipt.val(text);
+					
+						$autocomplete.scrollTo($hover);
+
+						// Input's text won't be selected if any key is pressed 
+						timer = setTimeout(function () {
+							clearTimeout(timer);
+							timer = undefined;
+							$autoipt.select();
+							$autoipt[0].selection = true;
+						}, 0);
+					}
+				} 
+			};
+			evtmap['focus ' + autoipt] = function (e) {
+                if (e.currentTarget.asyncBlur) {
+                    clearTimeout(e.currentTarget.asyncBlur);
+                    e.currentTarget.asyncBlur = undefined;
+                }				
+			};
+			evtmap['blur ' + autoipt] = function (e) {	
+				var closureCurrentTarget = e.currentTarget; 
+				e.currentTarget.asyncBlur = setTimeout(function () {
+					var $autocomplete, $current = $(closureCurrentTarget);
+
+					$current = $(closureCurrentTarget);
+					$autocomplete = $current.next(autocpt);
+					$current.removeClass(clsautoiptfcs + ' ' + style.autocompleteInputFocus);
+					$current[0].latestValue = '';
+					if ($current[0].selection) {
+						$current[0].selection = false;
+						$current.trigger('change');
+					}
+					$autocomplete.hide().css('zIndex', 'auto');
+
+                    clearTimeout(closureCurrentTarget.asyncBlur);
+                    closureCurrentTarget.asyncBlur = undefined;
+                }, 0);			
+			};
 			function onAutocompleteKeyup(e) {
 				var 
 				self = this, $input = $(e.target), 
@@ -144,97 +263,120 @@ define(function (require, exports) {
 						});
 					}
 				}, 0);			
-			}	
-			// The focus event is triggered before click event
-			evtmap['focus ' + autocpt] = function (e) {
-				var input = e.currentTarget.input;
-				if (input.asyncBlur) {
-                    clearTimeout(input.asyncBlur);
-                    input.asyncBlur = undefined;
-                }	
-				if (input.asyncChange) {
-					clearTimeout(input.asyncChange);
-					input.asyncChange = undefined;
-				}					
-			};
-			evtmap['click ' + autoopt] = function (e) {
-				var 
-				$autocomplete = $(e.target).closest(autocpt), 
-				$input = $($autocomplete[0].input), $current = $(e.currentTarget), 
-				oldval = $input.val(), newval = $current.text();
-				
-				$input[0].latestValue = '';
-				$autocomplete.hide().css('zIndex', 'auto');
-				if (oldval !== newval) {
-					$input.val(newval).trigger('change', $current.attr('value'));
-				}				
-			};
-			// When the `autocomplete` is turn on then the second focus will trigger the `autocomplete` feature
-			evtmap['click ' + autoipt] = function (e) {
-				var $current = $(e.target), oneClickShow = ($current.attr('data-vui-input-oneclickshow') == 1);
-				if (oneClickShow) {
-					onAutocompleteKeyup.apply(this, arguments);
-				} else {
-					if ($current.hasClass(clsautoiptfcs)) {
-						onAutocompleteKeyup.apply(this, arguments);
-					} 				
-				}
-				// The focus event is underlying than click event
-				// The Click event is a kind of virtual event
-				$current.addClass(clsautoiptfcs + ' ' + style.autocompleteInputFocus);
-			};	
-			evtmap['keyup ' + autoipt] = onAutocompleteKeyup;
-			evtmap['keydown ' + autoipt] = function(e) {
-				var 
-				which = e.which, upOrDownKey = (e.which === 38 || e.which === 40), upKey, 
-				$autoipt = this.$(autofcs), $autocomplete = $autoipt.next(autocpt), $autoopthvr, $hover, 
-				timer;
-				
-				$autoipt[0].latestValue = $autoipt.val();
-				
-				if (upOrDownKey) {
-					$autoopthvr = $autocomplete.find(autoopthvr);
-					upKey = (e.which === 38);
-					if ($autoopthvr.length) {
-						$autoopthvr.removeClass(clsautoopthvr);
-						$hover = $autoopthvr[upKey ? 'prev' : 'next']();
-						if (!$hover.length) {
-							$hover = $($autocomplete[0][upKey ? 'lastChild' : 'firstChild']);
-						}
-						$hover.addClass(clsautoopthvr);
-					} else {
-						$hover = $($autocomplete[0][upKey ? 'lastChild' : 'firstChild']);
-						// Set a maximum to scroll to bottom
-						// 违背常理的现象一定是假象
-						if (upKey) {
-							$autocomplete.scrollTop(10000);
-						} 
-						
-						$hover.addClass(clsautoopthvr);
-					}
-					
-					$autoipt.val($hover.text());
-					/*
-					top = $hover.position().top;
-					ht = parseFloat($autocomplete.css('height'));
-					if (top < 0 || top >= ht) {
-						toval = $autocomplete.scrollTop() + $hover.outerHeight() * (upKey ? -1 : 1);
-						console.log(toval, fromval)
-						toval = toval < 0 ? 10000 : (toval > fromval ? 0 : toval);
-						$autocomplete.scrollTop(toval);
-					}
-					*/
-					
-					// Input's text won't be selected if any key is pressed 
-					timer = setTimeout(function () {
-						clearTimeout(timer);
-						timer = undefined;
-						$autoipt.select();
-					}, 0);
-				} 
-			};			
+			}			
 			
-			// Select event
+			/**
+			 * Select event
+			 */
+			evtmap['click ' + sltarw] = function (e) {
+                toggle.apply(this, arguments);	
+            };
+			evtmap['click ' + sltipt] = function (e) {
+				if (!$(e.target).hasClass(clsautoipt)) {
+					toggle.apply(this, arguments);
+				} else {
+					onSelectKeyup.apply(this, arguments);
+				}
+			};
+			evtmap['keyup ' + sltipt] = onSelectKeyup;
+
+			evtmap['focus ' + sltipt] = evtmap['blur ' + sltipt] = function (e) {
+				if (e.target.readOnly) return;
+				var 
+				isfocusin = (e.type === 'focusin'), 
+				$input = $(e.target), select = $input.closest(sltslt)[0].select, $select = $(select), 
+				style = options.themes[$select.attr('data-vui-select-theme')].style,
+				text = $input.val(); 
+								
+				$input.toggleClass(clssltiptfcs + ' ' + style.selectInputFocus, isfocusin);
+
+				// Support 'placeholder-like' behavior for select
+				if (select.selectedIndex === 0 
+					&& ($(select.options[0]).attr('value') === undefined || $select.val() === '') 
+					&& (text === select.options[0].text || text === '')) {
+					$input.val(isfocusin ? '' : select.value);
+				}
+			};	
+			evtmap['change ' + sltipt] = function (e, value) {
+				e.target.asyncChange = setTimeout(function () {
+					var 
+					$input = $(e.target), $element = $input.closest(sltslt), 
+					text = $input.val(), select = $element[0].select, 
+					$select = $(select), $optionlist = $($element[0].optionlist), 
+					style = options.themes[$select.attr('data-vui-select-theme')].style, 
+					sltoptcls = style.selectOptionSelected + ' ' + clssltoptslt;
+					
+					if (value !== undefined) {
+						$select.val(value);
+					} else {
+						$.each(select.options, function () {
+							if (this.text === text) {
+								this.selected = true;
+								return false;
+							}
+						});
+					}
+					if (~select.selectedIndex && select.options[select.selectedIndex].text !== text) {
+						$select.val('');
+					}
+					$optionlist.find('li.' + clssltoptslt).removeClass(sltoptcls);
+					$optionlist.find('li[value=' + $select.val() + ']').addClass(sltoptcls);
+					$select.trigger('change');
+				}, 0);
+			};
+			evtmap['mouseenter ' + sltopt] = evtmap['mouseleave ' + sltopt] = function (e) {
+				var 
+				$current = $(e.currentTarget), 
+				style = options.themes[$($current.closest(sltslt)[0].select).attr('data-vui-select-theme')].style;
+				$(e.currentTarget).toggleClass(clssltopthvr + ' ' + style.selectOptionHover, e.type === 'mouseenter');
+			};
+            evtmap['click ' + sltopt] = function (e) {
+				if ($(e.currentTarget).hasClass(clssltoptdbd)) return;
+                var
+                    element = $(e.target).closest(sltslt)[0],
+                    $input = $(element.input), $current = $(e.currentTarget), $optionlist = $(element.optionlist),
+                    style = options.themes[$(element.select).attr('data-vui-select-theme')].style,
+                    oldval = element.select.value, newval = $current.attr('value'),
+                    sltoptcls = style.selectOptionSelected + ' ' + clssltoptslt;
+
+                $optionlist.hide().css('zIndex', 'auto');
+                $(element).addClass(style.selectClose).removeClass(style.selectOpen);
+                $(e.target).trigger('blur' + this.eventNamespace);
+
+                if (oldval !== newval) {
+                    $input.val($current.text());
+					$optionlist.find('li.' + clssltoptslt).removeClass(sltoptcls);
+                    $current.addClass(sltoptcls);
+                    $(element.select).val(newval).trigger('change');
+                }
+            };
+            evtmap['mouseenter ' + sltslt] = evtmap['mouseleave ' + sltslt] = function (e) {
+				var style = options.themes[$(e.currentTarget.select).attr('data-vui-select-theme')].style;
+                $(e.currentTarget).toggleClass(style.selectHover, e.type === 'mouseenter');
+            };
+            evtmap['focus ' + sltslt] = function (e) {
+                if (e.currentTarget.asyncBlur) {
+                    clearTimeout(e.currentTarget.asyncBlur);
+                    e.currentTarget.asyncBlur = undefined;
+                }
+
+                if (!$(e.currentTarget).hasClass(clssltfcs)) this.select2(e.currentTarget.select, 'focus');
+			};
+
+            evtmap['blur ' + sltslt] = function (e) {
+				var self = this, closureCurrentTarget = e.currentTarget; // 在一个事件流中, 全程共享同一事件对象
+                // Async, Anti-Flicker
+				// 浏览器中的js是单线程的, 没有并行执行能力; 而异步编程, 本质上属于流程控制
+				// 在一个事件流中, 异步流在整个事件流最末端执行
+				e.currentTarget.asyncBlur = setTimeout(function () {
+					self.select2(closureCurrentTarget.select, 'blur');
+					$(closureCurrentTarget.optionlist).css('zIndex', 'auto');
+					
+                    clearTimeout(closureCurrentTarget.asyncBlur);
+                    closureCurrentTarget.asyncBlur = undefined;
+                }, 0);
+				
+            };
 			function onSelectKeyup (e) {
 				if (e.result === undefined) {
 					if (e.target.asyncSelectKeyup) {
@@ -280,113 +422,6 @@ define(function (require, exports) {
 				}
 				e.preventDefault();				
 			}			
-			evtmap['click ' + sltarw] = evtmap['click ' + sltipt] = function (e) {
-				if ($.nodeName(e.target, 'input') && !e.target.readOnly) return;
-                toggle.apply(this, arguments);	
-            };
-			evtmap['click ' + sltipt] = function (e) {
-				if (e.target.readOnly) return;
-				onSelectKeyup.apply(this, arguments);
-			};
-			evtmap['keyup ' + sltipt] = onSelectKeyup;
-
-			evtmap['focus ' + sltipt] = evtmap['blur ' + sltipt] = function (e) {
-				if (e.target.readOnly) return;
-				var 
-				isfocusin = (e.type === 'focusin'), 
-				$input = $(e.target), select = $input.closest(sltslt)[0].select; 
-								
-				!isfocusin && $input.removeClass(clssltiptfcs + ' ' + style.selectInputFocus);
-				// Support 'placeholder-like' behavior for select
-				if (select.selectedIndex === 0 
-					&& ($(select.options[0]).attr('value') === undefined || $(select).val() === '') 
-					&& $input.val() === select.options[0].text) {
-					$input.val(isfocusin ? '' : select.value);
-				}
-			};	
-			evtmap['change ' + sltipt] = function (e, value) {
-				e.target.asyncChange = setTimeout(function () {
-					var 
-					$input = $(e.target), $element = $input.closest(sltslt), 
-					text = $input.val(), select = $element[0].select, $select = $(select);
-
-					if (value !== undefined) {
-						$select.val(value);
-					} else {
-						$.each(select.options, function () {
-							if (this.text === text) {
-								this.selected = true;
-								return false;
-							}
-						});
-					}
-					if (~select.selectedIndex && select.options[select.selectedIndex].text !== text) {
-						$select.val('');
-					}
-					$select.trigger('change');
-				}, 0);
-			};			
-			
-            evtmap['click ' + sltopt] = function (e) {
-				if ($(e.currentTarget).hasClass(clssltoptdbd)) return;
-                var
-                    element = $(e.target).closest(sltslt)[0],
-                    $input = $(element.input), $current = $(e.currentTarget), $optionlist = $(element.optionlist),
-                    style = options.themes[$(element.select).attr('data-vui-select-theme')].style,
-                    oldval = element.select.value, newval = $current.attr('value'),
-                    sltoptcls = style.selectOptionSelected + ' ' + clssltoptslt;
-
-                $optionlist.hide().css('zIndex', 'auto');
-                $(element).addClass(style.selectClose).removeClass(style.selectOpen);
-                $(e.target).trigger('blur' + this.eventNamespace);
-
-                if (oldval !== newval) {
-                    $input.val($current.text());
-					$optionlist.find('.' + clssltoptslt).removeClass(sltoptcls);
-                    $current.addClass(sltoptcls);
-                    $(element.select).val(newval).trigger('change');
-                }
-            };
-            evtmap['mouseenter ' + sltslt] = evtmap['mouseleave ' + sltslt] = function (e) {
-				var style = options.themes[$(e.currentTarget.select).attr('data-vui-select-theme')].style;
-                $(e.currentTarget).toggleClass(style.selectHover, e.type === 'mouseenter');
-            };
-            evtmap['focus ' + sltslt] = evtmap['focus ' + autoipt] = function (e) {
-                if (e.currentTarget.asyncBlur) {
-                    clearTimeout(e.currentTarget.asyncBlur);
-                    e.currentTarget.asyncBlur = undefined;
-                }
-                var $current = $(e.currentTarget), select = e.currentTarget.select;
-                if (!$.nodeName(e.currentTarget, 'input')) {
-					if (!$current.hasClass(clssltfcs)) 
-						this.select2(select, 'focus');
-				} else {
-					$current.addClass(clssltiptfcs + ' ' + style.selectInputFocus);
-				} 
-            };
-            evtmap['blur ' + sltslt] = evtmap['blur ' + autoipt] = function (e) {
-				var self = this, 
-				closureCurrentTarget = e.currentTarget; // 在一个事件流中, 全程共享同一事件对象
-                // Async, Anti-Flicker
-				// 浏览器中的js是单线程的, 没有并行执行能力; 而异步编程, 本质上属于流程控制
-				// 在一个事件流中, 异步流在整个事件流最末端执行
-				e.currentTarget.asyncBlur = setTimeout(function () {
-					var $autocomplete, $current;
-                    if (!$.nodeName(closureCurrentTarget, 'input')) {
-						self.select2(closureCurrentTarget.select, 'blur');
-					} else {
-						$current = $(closureCurrentTarget);
-						$autocomplete = $current.next(autocpt);
-						$current.removeClass(clsautoiptfcs + ' ' + style.autocompleteInputFocus);
-						$current[0].latestValue = '';
-						$autocomplete.hide();
-					}
-                    $(closureCurrentTarget.optionlist || $autocomplete).css('zIndex', 'auto');
-                    clearTimeout(closureCurrentTarget.asyncBlur);
-                    closureCurrentTarget.asyncBlur = undefined;
-                }, 0);
-				
-            };
 
             this._on(evtmap);
             this.on('option.add option.remove', sltslt, function (e, settings) {
@@ -669,7 +704,7 @@ define(function (require, exports) {
                     settings.multiple && $this.attr('multiple', 'multiple');
                     settings.autofocus && $this.attr('autofocus', 'autofocus');
                 } else {
-                    $element = $this.parent();
+                    $element = $this.prev('.' + clsslt);
                     $combox = $element.find('.' + clscbx);
                     $optionlist = $element.find('.' + clslst);
                     $input = $element.find('.' + clsipt);
@@ -724,7 +759,7 @@ define(function (require, exports) {
 
                 // Delete an option
                 // selectObject.remove(index): if the specified index less than zero or greater than or equiv to the options's length, invoke remove will do nothing
-                function remove(index) {
+                function remove(index) { 
                     if (!this.options.length) return;
                     var len = this.options.length - 1, option, selectedText = [];
                     if (index < 0) {

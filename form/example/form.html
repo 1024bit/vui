@@ -17,47 +17,43 @@
 		<script type="text/javascript" src="/js/jquery/jquery.1.11.js"></script>	
 	</head>
 	<body style="padding:300px">
-		<select id="slt2">
-		</select>
-		<script type="text/javascript">
-			var i = 0, html = '';
-			while (i++ < 1) {
-				html += 
-				'<option>hyou</option>' + 
-				'<option value="2">women</option>' + 
-				'<option value="3">php</option>' + 
-				'<option value="4">ps</option>' + 
-				'<option value="5">hello</option>' + 
-				'<option value="6">world</option>' + 
-				'<option value="7">python</option>' + 
-				'<option value="8">perl</option>'	+ '<option value="1">hyou</option>' + 
-				'<option value="2">women</option>' + 
-				'<option value="3">php</option>' + 
-				'<option value="4">ps</option>' + 
-				'<option value="5">hello</option>' + 
-				'<option value="6">world</option>' + 
-				'<option value="7">python</option>' + 
-				'<option value="8">perl</option>'					+'<option value="1">hyou</option>' + 
-				'<option value="2">women</option>' + 
-				'<option value="3">php</option>' + 
-				'<option value="4">ps</option>' + 
-				'<option value="5">hello</option>' + 
-				'<option value="6">world</option>' + 
-				'<option value="7">python</option>' + 
-				'<option value="8">perl</option>'	+ '<option value="1">hyou</option>' + 
-				'<option value="2">women</option>' + 
-				'<option value="3">php</option>' + 
-				'<option value="4">ps</option>' + 
-				'<option value="5">hello</option>' + 
-				'<option value="6">world</option>' + 
-				'<option value="7">python</option>' + 
-				'<option value="8" >perl</option>'			
-			}
-			$('#slt2').html(html);
-		</script>
+		<select>
+				<option>please</option>
+				<option value="1">hello</option>
+				<option value="2">world</option>
+				<option value="3">php</option>
+				<option value="4">perl</option>				
+				<option value="5">haha</option>
+				<option value="6">women</option>
+				<option value="7">python</option>
+				<option value="8">phtml</option>
+				<option value="9">ps</option>
+				<option value="10">ok</option>
+				<option value="11">football</option>
+				<option value="12">basket</option>
+				<option value="13" selected>okmen</option>
+				<option value="14">yoho</option>
+				<option value="15">yoho14</option>
+				<option value="16">yoho15</option>
+				<option value="17">yoho16</option>
+				<option value="18">yoho17</option>
+				<option value="19">yoho19</option>
+				<option value="20">yoho20</option>
+				<option value="21">yoho21</option>
+				<option value="22">yoho22</option>
+				<option value="23">yoho23</option>
+				<option value="24">yoho24</option>
+				<option value="25">yoho25</option>
+				<option value="26">yoho26</option>
+				<option value="27">yoho27</option>
+				<option value="28">yoho28</option>
+				<option value="29">yoho29</option>
+				<option value="30">yoho30</option>
+				<option value="31">yoho31</option>
 
+			</select>		
 		<form>
-			<div><input id="ipt" list="slt2" type="text" autocomplete="on" vui-listsize="5" /></div>
+			<div><input id="ipt" list="slt" type="text" autocomplete="on" vui-listsize="5" /></div>
 			<div>
 			<select id="slt">
 				<option>please</option>
@@ -71,6 +67,11 @@
 				<option value="8">phtml</option>
 				<option value="9">ps</option>
 				<option value="10">ok</option>
+				<option value="11">football</option>
+				<option value="12">basket</option>
+				<option value="13" selected>okmen</option>
+				<option value="14">yoho</option>
+				<option value="14">yoho</option>
 			</select>
 			</div>
 			<div class="buttons">
@@ -128,6 +129,7 @@
 								autocompleteInput: 'vip-select-input', 
 								autocompleteInputFocus: '', 
 								autocompleteItem: 'vip-select-option', 
+								autocompleteItemHover: 'vip-select-option-hover', 
 								// 选择框
 								select: 'vip-select', 
 								selectOpen: 'vip-select-open', 
@@ -139,6 +141,7 @@
 								selectArrow: 'vip-select-arrow icon-select-down-arrow', 
 								selectOptionList: 'vip-select-option-list', 
 								selectOption: 'vip-select-option', 
+								selectOptionHover: 'vip-select-option-hover', 
 								selectOptionSelected: 'vip-select-selected'
 							}
 						},
@@ -155,6 +158,7 @@
 								selectArrow: 'vip-select-arrow icon-select-down-arrow', 
 								selectOptionList: 'vip-select-option-list', 
 								selectOption: 'vip-select-option', 
+								selectOptionHover: 'vip-select-option-hover', 
 								selectOptionSelected: 'vip-select-selected'
 							}
 						},

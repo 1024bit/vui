@@ -113,7 +113,7 @@ define(function(require, exports) {
 						js = href.indexOf(scheme), 
 						context = options.context || this, 
 						id;
-						
+
 					if (~$.inArray(href, ['', '#'])) return _leave();
 					
 					id = this._getSelectedId($target);
@@ -142,15 +142,15 @@ define(function(require, exports) {
 		_getCreateOptions: function() {
 			var 
 			self = this, 
-			createOptions = {}, RE_STR = /^[a-z]+$/i, 
+			createOptions = {}, RE_JSON_STR = /\{/, 
 			attrs = this.element[0].attributes, 
 			nodeName, optionName;
 			$.each(attrs, function(i) {
 				nodeName = attrs[i].nodeName;
 				nodeValue = attrs[i].value || attrs[i].nodeValue;
-				if (!attrs[i].nodeName.indexOf('data-' + self.namespace)) {
+				if (!attrs[i].nodeName.indexOf('data-' + self.namespace + '-' + self.widgetName)) {
 					optionName = nodeName.slice(nodeName.lastIndexOf('-') + 1);
-					createOptions[optionName] = RE_STR.test(nodeValue) ? nodeValue : self.element.metadata(nodeName);
+					createOptions[optionName] = RE_JSON_STR.test(nodeValue) ? self.element.metadata(nodeName) : nodeValue;
 				}
 			});
 			return createOptions;
