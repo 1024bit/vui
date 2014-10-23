@@ -11,7 +11,7 @@
  *  Copyright(c) 2014 Cherish Peng<cherish.peng@xx.com>
  *  MIT Licensed 
  */
-define(function(require, exports) {
+define(function (require, exports) {
 	var 
 	$ = require('jquery');
 	require('jquery.ui.widget');
@@ -38,10 +38,14 @@ define(function(require, exports) {
 			loadMsgDelay: 10, 
 			// Whether prevent the raw button's default behaviour
 			preventDefault: false, 
+			// Trigger the raw button's event first
+			rawFirst: true, 
+			// If set to true, when a task return false, then terminate
+			terminable: false, 
 			// Click listener
 			click: $.noop
 		},  
-		_createWidget: function(options, element) {
+		_createWidget: function (options, element) {
 			// options.element must be jQuery object
 			var node = (options && options.element && options.element[0]) || element;
 			if (!($.nodeName(node, 'button') || $.nodeName(node, 'input'))) {
@@ -49,48 +53,72 @@ define(function(require, exports) {
 			}
 			this._super.apply(this, arguments);
 		},
-		_attachEvent: function() {
+		_attachEvent: function () {
 			var 
+			self = this, 
 			options = this.options, 
 			style = options.themes[options.theme].style, 
 			clsbtn = options.classPrefix + '-button', 
 			btnevtmap = {}, timer;
 			
-			btnevtmap['click'] = function(e) {
+			btnevtmap['click'] = function (e) {
 				if (e.target.loading) return;
 				
-				var $el = $(e.target), evt;
+				var 
+				i = 0, result, 
+				$el = $(e.target), 
 				// Trigger events were bound at the raw btn
-				evt = $.Event('click');
+				evt = $.Event('click'), 
+				taskRaw = function (e) {
+					$(e.target.button).trigger(evt);
+					return evt.result;
+				}, 
+				taskEnhanced = options.click, 
+				// Track simulated button and raw button's tasks
+				tasks = options.rawFirst 
+					? [taskRaw, taskEnhanced] 
+					: [taskEnhanced, taskRaw];
+				
 				// Prevent raw button's default behaviour, eg: refresh page
 				if (options.preventDefault) evt.preventDefault();
-				$(e.target.button).trigger(evt);
-				
+
+				for (; i < tasks.length; i++) {
+					result = tasks[i].call(self, e);
+					tasks[i] = result;
+					if (options.terminable && (false === result)) {
+						_always();
+						return;
+					}
+				}
+
 				// Prevent the repeat click in `loadMsgDelay` ms
-				timer = setTimeout(function() {
+				timer = setTimeout(function () {
 					e.target.loading = true;
 					$el.addClass(style.btnLoading);
 				}, options.loadMsgDelay);
-				// Track simulated button and raw button's tasks
-				$.when(evt.result, options.click.call(this, e)).always(function() {
+
+					
+				$.when.apply($, tasks).always(_always);
+				
+				function _always() {
 					if (timer) {
 						e.target.loading = false;
 						clearTimeout(timer);
 						timer = undefined;
 					}
 					$el.removeClass(style.btnLoading);						
-				});
+				}
 			};
 			this._on(this.$button, btnevtmap);
 		},
-		option: function() {
+		option: function () {
 			if (this.options.optionChange) {
 				this.$button.before(this.element).remove();
 			}			
 			this._super.apply(this, arguments);
 			return this;
 		}, 		
-		enable: function() {
+		enable: function () {
 			var 
             options = this.options, 
             style = options.themes[options.theme].style;
@@ -99,7 +127,7 @@ define(function(require, exports) {
 			this.element.prop('disabled', false);
 			this._super.apply(this, arguments);
 		}, 
-		disable: function() {
+		disable: function () {
 			var 
             options = this.options, 
             style = options.themes[options.theme].style;
@@ -108,7 +136,7 @@ define(function(require, exports) {
 			this.element.prop('disabled', true);
 			this._super.apply(this, arguments);
 		}, 
-		_draw: function(models) {
+		_draw: function (models) {
 			var 
             options = this.options, 
             style = options.themes[options.theme].style, 

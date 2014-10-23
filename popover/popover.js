@@ -44,7 +44,7 @@ define(function(require, exports) {
 			title: '', 
 			content: '', 
 			// Delay disappear, ms
-			delay: 0, 
+			delay: 3000, 
 			// Can close manully
 			closable: false,
 			// Whether only one instance can be show at the same time

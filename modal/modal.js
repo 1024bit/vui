@@ -47,7 +47,9 @@ define(function(require, exports) {
 				{value: 'Ok', event: 'ok'} // button's value and responsive event
 			], 
 			// Whether only one instance can be show at the same time
-			xor: false, 			
+			xor: false, 		
+			// Delay disappear, ms
+			delay: 5000, 			
 			// By default, hide mask
 			showMask: false
 		},  
@@ -83,7 +85,16 @@ define(function(require, exports) {
 					this.close();
 				} 
 			};
-
+			modalevtmap['mouseenter'] = function (e) {
+				if (this.timer) {
+					clearTimeout(this.timer);
+					this.timer = null;
+				}
+			}; 
+			modalevtmap['mouseleave'] = function (e) {
+				options.delay && (this.timer = this._delay('close', options.delay));
+			};			
+		
 			this._on(this.$modal, modalevtmap);
 		}, 
 		_draw: function(models) {
@@ -131,6 +142,10 @@ define(function(require, exports) {
 			}
 		}, 
 		close: function() {
+			if (this.timer) {
+				clearTimeout(this.timer);
+				this.timer = undefined;
+			}		
 			this.$modal.remove();
 			this.constructor.$mask.hide();
 			this.destroy();		
@@ -158,6 +173,7 @@ define(function(require, exports) {
 				left: tgtofs.left + (tgtsz.w / 2) - (modalsz.w / 2)
 			};
 			this.$modal.css(modalofs);
+			this.options.delay && (this.timer = this._delay('close', this.options.delay));
 			return this;
 		}
 	});
