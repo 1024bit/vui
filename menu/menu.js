@@ -133,7 +133,10 @@ define(function(require, exports) {
 			events = options.events,
 			$menuItem, level, 
 			styMenuItem = '.' + options.classPrefix + '-item-', 
-			$ctnr = options.container, router;
+			clshdr = options.classPrefix + '-header-',
+			$ctnr = options.container, router,
+			withIcon, isHeader,
+			theme = options.themes[options.theme]; 
 
 			if (href instanceof $) {
 				$menuItem = href;
@@ -150,6 +153,12 @@ define(function(require, exports) {
 
 			// while ($menuItem.length && ($.inArray($menuItem[0], actives) === -1)) {
 			level = $menuItem.closest('ul').attr('level');
+			withIcon = util.getOrLast(theme.withIcon, level);
+			isHeader = $menuItem.hasClass(clshdr+level);
+			if(withIcon && isHeader){
+				var menuHideCls = util.getOrLast(options.themes.default.style.menuHideIcon, level);
+				if($menuItem.find("i").hasClass(menuHideCls))return;
+			}
 			router = this._getRouter($menuItem, level);
 			router[0].trigger((events[0] || 'click') + this.eventNamespace, [0, false]);
 		},	
