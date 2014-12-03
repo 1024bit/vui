@@ -167,7 +167,6 @@ define(function(require, exports) {
 			clshdr = options.classPrefix + '-header-', 
 			clsitm = options.classPrefix + '-item-', 
 			clsactv = options.classPrefix + '-selected-', 
-			clsicon = options.classPrefix + '-icon', 
 			clsshowicon = options.classPrefix + '-show-icon', 
 			actvcls, 
 			i = 0, $ctnr;
@@ -240,8 +239,7 @@ define(function(require, exports) {
 						$ctnr = $(util.getOrLast(options.container, bound));
 						$href = $ctnr.find(hash);
 						
-						withIcon && $this.find('.' + clsshowicon)
-							.toggleClass(hideiconcls);
+						withIcon && $this.find('.' + clsshowicon)[manual ? 'toggleClass' : 'addClass'](hideiconcls);
 				
 						// Just for tree
 						if (manual && $href.is(':visible') && util.getOrLast(theme.layout, level)) {
